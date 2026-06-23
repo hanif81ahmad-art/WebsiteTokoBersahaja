@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - PasarInstan</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1f2937; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .row-in { animation: fadeInUp 0.3s ease-out; }
+
+        @keyframes livePulse { 0% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.6); } 70% { box-shadow: 0 0 0 6px rgba(52, 211, 153, 0); } 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); } }
+        .pulse-dot { animation: livePulse 1.8s infinite; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans min-h-screen">
+
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-3 pointer-events-none"></div>
+
+    <!-- LOGIN GATE -->
+    <div id="login-gate" class="fixed inset-0 z-40 bg-gray-900 flex items-center justify-center p-4">
+        <div class="bg-gray-800 border border-gray-700 rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
+            <div class="text-center">
+                <div class="inline-flex bg-gradient-to-r from-orange-500 to-amber-500 p-3 rounded-2xl text-white shadow-md shadow-orange-500/20 mb-2">
+                    <i class="fa-solid fa-user-shield text-xl"></i>
+                </div>
+                <h1 class="text-lg font-black text-gray-100">Admin Dashboard</h1>
+                <p class="text-[11px] text-gray-400 mt-1">Masuk untuk memantau & mengonfirmasi pesanan PasarInstan.</p>
+            </div>
+            <div class="space-y-3 pt-2">
+                <div>
+                    <label class="text-[10px] text-gray-400 font-bold block mb-1">Username Admin</label>
+                    <input type="text" id="admin-username" placeholder="admin" class="w-full bg-gray-700 border border-gray-600 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-orange-500">
+                </div>
+                <div>
+                    <label class="text-[10px] text-gray-400 font-bold block mb-1">Kata Sandi</label>
+                    <input type="password" id="admin-password" placeholder="******" class="w-full bg-gray-700 border border-gray-600 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-orange-500" onkeydown="if(event.key==='Enter') processAdminLogin()">
+                </div>
+            </div>
+            <button onclick="processAdminLogin()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs py-2.5 rounded-xl transition shadow-lg">Masuk Admin</button>
+            <p id="login-error" class="hidden text-[11px] text-red-400 text-center font-semibold"></p>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboard" class="hidden">
+
+        <!-- NAV -->
+        <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-30 shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+                <div class="flex items-center gap-2 shrink-0">
+                    <div class="bg-gradient-to-r from-orange-500 to-amber-500 p-2 rounded-xl text-white shadow-md shadow-orange-500/20">
+                        <i class="fa-solid fa-bolt text-lg"></i>
+                    </div>
+                    <span class="text-base md:text-lg font-black text-gray-100 tracking-wide">PasarInstan <span class="text-orange-400">Admin</span></span>
+                </div>
+
+                <div class="flex items-center gap-2 text-[11px] text-gray-400">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot hidden sm:inline-block"></span>
+                    <span class="hidden sm:inline-block">Live · update terakhir <span id="last-sync" class="text-gray-300 font-semibold">-</span></span>
+                </div>
+
+                <div class="flex items-center gap-2 shrink-0">
+                    <button onclick="fetchOrders(true)" id="btn-refresh" class="text-xs font-bold bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-2 rounded-xl border border-gray-600 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-rotate"></i> <span class="hidden sm:inline">Refresh</span>
+                    </button>
+                    <button onclick="adminLogout()" class="text-xs font-bold bg-red-500/10 hover:bg-red-500/20 text-red-400 px-3 py-2 rounded-xl border border-red-500/20 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-right-from-bracket"></i> <span class="hidden sm:inline">Keluar</span>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 space-y-6">
+
+            <!-- STATS -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-4">
+                    <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Total Pesanan</div>
+                    <div id="stat-total" class="text-2xl font-black text-gray-100 mt-1 font-mono">0</div>
+                </div>
+                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-4">
+                    <div class="text-[10px] text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1"><i class="fa-solid fa-clock"></i> Menunggu Konfirmasi</div>
+                    <div id="stat-pending" class="text-2xl font-black text-amber-400 mt-1 font-mono">0</div>
+                </div>
+                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-4">
+                    <div class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Sudah Dibayar</div>
+                    <div id="stat-success" class="text-2xl font-black text-emerald-400 mt-1 font-mono">0</div>
+                </div>
+                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-4">
+                    <div class="text-[10px] text-orange-400 font-bold uppercase tracking-wider">Omzet Terkonfirmasi</div>
+                    <div id="stat-revenue" class="text-2xl font-black text-orange-400 mt-1 font-mono">Rp 0</div>
+                </div>
+            </div>
+
+            <!-- TOOLBAR -->
+            <div class="flex flex-col sm:flex-row gap-3 items-center justify-between bg-gray-800 p-4 rounded-2xl border border-gray-700">
+                <div class="relative w-full sm:max-w-xs">
+                    <input type="text" id="search-input" oninput="renderOrders()" placeholder="Cari invoice / nama / no. WA..." class="w-full bg-gray-700 text-gray-200 pl-9 pr-3 py-2 rounded-xl border border-gray-600 focus:outline-none focus:border-orange-500 text-xs">
+                    <div class="absolute left-3 top-2.5 text-gray-400 text-xs"><i class="fa-solid fa-magnifying-glass"></i></div>
+                </div>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <button data-filter="Semua" onclick="setStatusFilter('Semua')" class="filter-badge flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold border transition bg-orange-500 text-white border-orange-500">Semua</button>
+                    <button data-filter="Pending" onclick="setStatusFilter('Pending')" class="filter-badge flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold border transition bg-gray-700 text-gray-300 border-gray-600">Pending</button>
+                    <button data-filter="Success" onclick="setStatusFilter('Success')" class="filter-badge flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold border transition bg-gray-700 text-gray-300 border-gray-600">Success</button>
+                </div>
+            </div>
+
+            <!-- ORDERS TABLE (desktop) -->
+            <div class="hidden lg:block bg-gray-800 border border-gray-700 rounded-3xl overflow-hidden">
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr class="bg-gray-900/60 text-gray-400 text-[10px] uppercase tracking-wider">
+                                <th class="text-left font-bold px-4 py-3">Invoice</th>
+                                <th class="text-left font-bold px-4 py-3">Pembeli</th>
+                                <th class="text-left font-bold px-4 py-3">Produk</th>
+                                <th class="text-right font-bold px-4 py-3">Total</th>
+                                <th class="text-left font-bold px-4 py-3">Metode</th>
+                                <th class="text-center font-bold px-4 py-3">Bukti</th>
+                                <th class="text-center font-bold px-4 py-3">Status</th>
+                                <th class="text-center font-bold px-4 py-3">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-table-body" class="divide-y divide-gray-700/50"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ORDERS CARDS (mobile/tablet) -->
+            <div class="lg:hidden space-y-3" id="orders-cards"></div>
+
+        </main>
+    </div>
+
+<script>
+    const SPREADSHEET_API_URL = "https://script.google.com/macros/s/AKfycbxsJMud7S4ZZLHRUzRNJAXNJMpPVkgg2dPP5JZNjF7wqzuZv10nh1Ld87prSZQjPVlsKQ/exec";
+
+    let allOrders = [];
+    let statusFilter = 'Semua';
+    let autoRefreshTimer = null;
+
+    window.addEventListener('DOMContentLoaded', () => {
+        checkAdminAuth();
+    });
+
+    // AUTH
+    function checkAdminAuth() {
+        try {
+            const session = JSON.parse(localStorage.getItem('user_session'));
+            if (session && session.role === 'admin') {
+                showDashboard();
+                return;
+            }
+        } catch (e) { /* sesi tidak valid, tampilkan login */ }
+        document.getElementById('login-gate').classList.remove('hidden');
+        document.getElementById('dashboard').classList.add('hidden');
+    }
+
+    function processAdminLogin() {
+        const user = (document.getElementById('admin-username').value || '').trim();
+        const pass = (document.getElementById('admin-password').value || '').trim();
+        const errBox = document.getElementById('login-error');
+
+        if (user.toLowerCase() === 'admin' && pass === 'admin123') {
+            localStorage.setItem('user_session', JSON.stringify({ username: 'admin', role: 'admin' }));
+            errBox.classList.add('hidden');
+            showDashboard();
+        } else {
+            errBox.innerText = "Username atau kata sandi admin salah.";
+            errBox.classList.remove('hidden');
+        }
+    }
+
+    function adminLogout() {
+        localStorage.removeItem('user_session');
+        if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+        document.getElementById('dashboard').classList.add('hidden');
+        document.getElementById('login-gate').classList.remove('hidden');
+        document.getElementById('admin-password').value = "";
+    }
+
+    function showDashboard() {
+        document.getElementById('login-gate').classList.add('hidden');
+        document.getElementById('dashboard').classList.remove('hidden');
+        fetchOrders();
+        if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+        autoRefreshTimer = setInterval(() => fetchOrders(), 30000); // monitoring otomatis tiap 30 detik
+    }
+
+    // DATA FETCH
+    function fetchOrders(manual) {
+        const btnRefresh = document.getElementById('btn-refresh');
+        if (manual && btnRefresh) {
+            btnRefresh.disabled = true;
+            btnRefresh.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span class="hidden sm:inline">Memuat</span>`;
+        }
+
+        fetch(SPREADSHEET_API_URL)
+            .then(res => {
+                if (!res.ok) throw new Error("Gagal mengambil data dari server");
+                return res.json();
+            })
+            .then(data => {
+                if (data && data.error) throw new Error(data.error);
+                allOrders = Array.isArray(data) ? data.slice().reverse() : []; // pesanan terbaru di atas
+                renderOrders();
+                updateStats();
+                const now = new Date();
+                document.getElementById('last-sync').innerText = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            })
+            .catch(err => {
+                console.error(err);
+                showToast("Gagal memuat data pesanan dari spreadsheet.", "error");
+            })
+            .finally(() => {
+                if (manual && btnRefresh) {
+                    btnRefresh.disabled = false;
+                    btnRefresh.innerHTML = `<i class="fa-solid fa-rotate"></i> <span class="hidden sm:inline">Refresh</span>`;
+                }
+            });
+    }
+
+    function isSuccessStatus(stat) {
+        const s = (stat || "").trim().toLowerCase();
+        return s === "success" || s === "selesai";
+    }
+
+    function setStatusFilter(f) {
+        statusFilter = f;
+        document.querySelectorAll('.filter-badge').forEach(b => {
+            if (b.dataset.filter === f) {
+                b.className = "filter-badge flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold border transition bg-orange-500 text-white border-orange-500";
+            } else {
+                b.className = "filter-badge flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold border transition bg-gray-700 text-gray-300 border-gray-600";
+            }
+        });
+        renderOrders();
+    }
+
+    function updateStats() {
+        const total = allOrders.length;
+        const successOrders = allOrders.filter(o => isSuccessStatus(o.status));
+        const pendingCount = total - successOrders.length;
+        const revenue = successOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+
+        document.getElementById('stat-total').innerText = total;
+        document.getElementById('stat-pending').innerText = pendingCount;
+        document.getElementById('stat-success').innerText = successOrders.length;
+        document.getElementById('stat-revenue').innerText = formatMoney(revenue);
+    }
+
+    function getFilteredOrders() {
+        const q = (document.getElementById('search-input').value || '').trim().toLowerCase();
+        return allOrders.filter(o => {
+            const matchesStatus = statusFilter === 'Semua'
+                ? true
+                : (statusFilter === 'Success' ? isSuccessStatus(o.status) : !isSuccessStatus(o.status));
+
+            if (!matchesStatus) return false;
+            if (!q) return true;
+
+            const haystack = `${o.invoice || ''} ${o.name || ''} ${o.phone || ''}`.toLowerCase();
+            return haystack.includes(q);
+        });
+    }
+
+    // RENDER
+    function renderOrders() {
+        const list = getFilteredOrders();
+        const tableBody = document.getElementById('orders-table-body');
+        const cardsBox = document.getElementById('orders-cards');
+
+        if (list.length === 0) {
+            const emptyMsg = `
+                <div class="text-center py-12 text-gray-500 text-xs">
+                    <i class="fa-solid fa-inbox text-3xl mb-2 block text-gray-600"></i>
+                    Tidak ada pesanan yang cocok dengan filter ini.
+                </div>`;
+            tableBody.innerHTML = `<tr><td colspan="8">${emptyMsg}</td></tr>`;
+            cardsBox.innerHTML = emptyMsg;
+            return;
+        }
+
+        tableBody.innerHTML = list.map(o => rowHtml(o)).join('');
+        cardsBox.innerHTML = list.map(o => cardHtml(o)).join('');
+    }
+
+    function statusBadgeHtml(stat) {
+        if (isSuccessStatus(stat)) {
+            return `<span class="px-2.5 py-1 rounded-lg text-[10px] font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 whitespace-nowrap"><i class="fa-solid fa-circle-check mr-1"></i>Success</span>`;
+        }
+        return `<span class="px-2.5 py-1 rounded-lg text-[10px] font-black bg-amber-500/10 text-amber-400 border border-amber-500/20 whitespace-nowrap"><i class="fa-solid fa-clock mr-1"></i>Pending</span>`;
+    }
+
+    function actionButtonsHtml(o) {
+        const inv = escapeAttr(o.invoice || '');
+        if (isSuccessStatus(o.status)) {
+            return `<button onclick="confirmStatusChange('${inv}','Pending')" class="text-[10px] font-bold text-amber-400 hover:text-amber-300 border border-amber-500/30 hover:bg-amber-500/10 px-2.5 py-1.5 rounded-lg transition whitespace-nowrap"><i class="fa-solid fa-rotate-left mr-1"></i>Batalkan</button>`;
+        }
+        return `<button onclick="confirmStatusChange('${inv}','Success')" class="text-[10px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 px-2.5 py-1.5 rounded-lg transition shadow whitespace-nowrap"><i class="fa-solid fa-check mr-1"></i>Konfirmasi Bayar</button>`;
+    }
+
+    function proofLinkHtml(o) {
+        const img = o.imageUrl || o.ImageUrl || "";
+        if (!img || img === "#" || img === "Tidak ada gambar") {
+            return `<span class="text-[10px] text-gray-500">-</span>`;
+        }
+        return `<a href="${img}" target="_blank" class="text-[11px] font-bold text-orange-400 hover:underline"><i class="fa-solid fa-image mr-1"></i>Lihat</a>`;
+    }
+
+    function rowHtml(o) {
+        const total = Number(o.total || 0);
+        return `
+            <tr class="row-in hover:bg-gray-700/30 transition">
+                <td class="px-4 py-3">
+                    <div class="font-black text-orange-400 text-xs">${o.invoice || '-'}</div>
+                    <div class="text-[10px] text-gray-500">${o.date || '-'}</div>
+                </td>
+                <td class="px-4 py-3">
+                    <div class="font-bold text-gray-200">${o.name || '-'}</div>
+                    <div class="text-[10px] text-gray-500"><i class="fa-brands fa-whatsapp mr-1"></i>${o.phone || '-'}</div>
+                </td>
+                <td class="px-4 py-3 text-gray-300 max-w-[220px]"><div class="line-clamp-2">${o.products || '-'}</div></td>
+                <td class="px-4 py-3 text-right font-mono font-black text-gray-100 whitespace-nowrap">${formatMoney(total)}</td>
+                <td class="px-4 py-3 text-gray-400 max-w-[200px]"><div class="line-clamp-2 text-[11px]">${o.method || '-'}</div></td>
+                <td class="px-4 py-3 text-center">${proofLinkHtml(o)}</td>
+                <td class="px-4 py-3 text-center">${statusBadgeHtml(o.status)}</td>
+                <td class="px-4 py-3 text-center">${actionButtonsHtml(o)}</td>
+            </tr>
+        `;
+    }
+
+    function cardHtml(o) {
+        const total = Number(o.total || 0);
+        return `
+            <div class="row-in bg-gray-800 border border-gray-700 rounded-2xl p-4 space-y-3">
+                <div class="flex items-start justify-between gap-2 border-b border-gray-700/60 pb-2.5">
+                    <div>
+                        <div class="font-black text-orange-400 text-xs">${o.invoice || '-'}</div>
+                        <div class="text-[10px] text-gray-500">${o.date || '-'}</div>
+                    </div>
+                    ${statusBadgeHtml(o.status)}
+                </div>
+                <div class="text-xs">
+                    <div class="font-bold text-gray-200">${o.name || '-'}</div>
+                    <div class="text-[10px] text-gray-500"><i class="fa-brands fa-whatsapp mr-1"></i>${o.phone || '-'}</div>
+                </div>
+                <div class="text-[11px] text-gray-300">
+                    <span class="text-gray-500">Produk:</span> ${o.products || '-'}
+                </div>
+                <div class="text-[11px] text-gray-400">
+                    <span class="text-gray-500">Metode:</span> ${o.method || '-'}
+                </div>
+                <div class="flex items-center justify-between pt-2 border-t border-gray-700/50">
+                    <span class="font-mono font-black text-gray-100 text-sm">${formatMoney(total)}</span>
+                    ${proofLinkHtml(o)}
+                </div>
+                <div class="pt-1">${actionButtonsHtml(o)}</div>
+            </div>
+        `;
+    }
+
+    // STATUS UPDATE
+    function confirmStatusChange(invoice, newStatus) {
+        const label = newStatus === 'Success' ? 'mengonfirmasi pesanan ini sebagai SUDAH BAYAR' : 'mengembalikan pesanan ini ke status PENDING';
+        if (!confirm(`Anda yakin ingin ${label}?\n\nInvoice: ${invoice}`)) return;
+        updateOrderStatus(invoice, newStatus);
+    }
+
+    function updateOrderStatus(invoice, newStatus) {
+        showToast(`Memproses perubahan status ${invoice}...`, "blue");
+
+        // Update tampilan secara optimis dulu agar admin langsung melihat hasilnya
+        const target = allOrders.find(o => (o.invoice || '') === invoice);
+        if (target) target.status = newStatus;
+        renderOrders();
+        updateStats();
+
+        // mode no-cors + Content-Type text/plain: pola yang sama dipakai di index.html,
+        // supaya tidak terkena pemblokiran CORS preflight dari Apps Script
+        fetch(SPREADSHEET_API_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({ action: "updateStatus", invoice: invoice, status: newStatus })
+        })
+        .then(() => {
+            showToast(`Status ${invoice} diperbarui menjadi ${newStatus}.`, "success");
+            // Sinkronisasi ulang dari server untuk memastikan datanya benar-benar tersimpan
+            setTimeout(() => fetchOrders(), 1500);
+        })
+        .catch(err => {
+            console.error(err);
+            showToast("Gagal mengirim perubahan status ke server.", "error");
+            // Refresh agar tampilan kembali sesuai data server yang sebenarnya
+            fetchOrders();
+        });
+    }
+
+    function escapeAttr(str) {
+        return String(str).replace(/'/g, "\\'");
+    }
+
+    // UTILITIES
+    function formatMoney(amount) { return "Rp " + (Number(amount) || 0).toLocaleString('id-ID'); }
+
+    function showToast(msg, type = "success") {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        let icon = "fa-circle-check", color = "bg-emerald-500 border-emerald-400 text-white";
+        if (type === "error") { icon = "fa-circle-xmark"; color = "bg-red-500 border-red-400 text-white"; }
+        if (type === "blue") { icon = "fa-circle-info"; color = "bg-blue-500 border-blue-400 text-white"; }
+        const toast = document.createElement('div');
+        toast.className = `p-4 rounded-xl border flex items-center gap-2.5 shadow-xl text-xs font-bold transition duration-300 pointer-events-auto ${color}`;
+        toast.innerHTML = `<i class="fa-solid ${icon} text-sm"></i> <span>${msg}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.add('opacity-0');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+</script>
+</body>
+</html>
