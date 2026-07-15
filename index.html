@@ -307,7 +307,7 @@
                 <div id="login-error-box" class="hidden mt-3 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-[11px] font-semibold flex items-center gap-1.5">
                     <i class="fa-solid fa-circle-exclamation"></i><span id="login-error-text"></span>
                 </div>
-                <button onclick="processLogin()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs py-2.5 rounded-xl transition shadow-lg mt-4">Masuk Anggota</button>
+                <button onclick="processLogin()" id="btn-login-submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs py-2.5 rounded-xl transition shadow-lg mt-4">Masuk Anggota</button>
                 <p class="text-center text-[11px] text-gray-400 mt-3">Belum punya akun? <button type="button" onclick="switchAuthMode('signin')" class="text-orange-400 font-bold hover:underline">Sign In</button></p>
             </div>
 
@@ -329,7 +329,7 @@
                 <div id="signin-error-box" class="hidden mt-3 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-[11px] font-semibold flex items-center gap-1.5">
                     <i class="fa-solid fa-circle-exclamation"></i><span id="signin-error-text"></span>
                 </div>
-                <button onclick="processSignIn()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs py-2.5 rounded-xl transition shadow-lg mt-4">Daftar &amp; Masuk</button>
+                <button onclick="processSignIn()" id="btn-signin-submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs py-2.5 rounded-xl transition shadow-lg mt-4">Daftar &amp; Masuk</button>
                 <p class="text-center text-[11px] text-gray-400 mt-3">Sudah punya akun? <button type="button" onclick="switchAuthMode('login')" class="text-orange-400 font-bold hover:underline">Login</button></p>
             </div>
         </div>
@@ -341,7 +341,7 @@
     </footer>
 
 <script>
-    const SPREADSHEET_API_URL = "https://script.google.com/macros/s/AKfycbxsJMud7S4ZZLHRUzRNJAXNJMpPVkgg2dPP5JZNjF7wqzuZv10nh1Ld87prSZQjPVlsKQ/exec"; 
+    const SPREADSHEET_API_URL = "https://script.google.com/macros/s/AKfycbwicWEk1yyZNs8xre8V0fZadGXX5VP-eZ42JkrLuErprckEsCQzyjemH3m6lpRj3d93/exec"; 
     const WHATSAPP_ADMIN_COMPLAINT = "6285179713643"; 
 
     // DATA KATALOG PRODUK ASLI
@@ -421,17 +421,10 @@
     });
 
     // SISTEM OTENTIKASI & RE-LOGIN OTOMATIS
+    // Akun (username/password) TIDAK lagi disimpan di localStorage.
+    // Semua akun sekarang disimpan sebagai database di Google Spreadsheet lewat Apps Script.
+    // localStorage hanya dipakai untuk menyimpan SESI (siapa yang sedang login di browser ini).
     function initAuth() {
-        // ===== BERSIHKAN DATA AKUN TESTING (SEKALI SAJA) =====
-        // Menghapus username & password hasil testing developer sebelum produk diserahkan ke client.
-        // Berjalan hanya 1x (ditandai flag di bawah) sehingga TIDAK akan menghapus akun
-        // yang nanti didaftarkan oleh client/pembeli sungguhan.
-        if (!localStorage.getItem('auth_data_cleared_v1')) {
-            localStorage.removeItem('registered_users');
-            localStorage.removeItem('user_session');
-            localStorage.setItem('auth_data_cleared_v1', 'true');
-        }
-
         const session = JSON.parse(localStorage.getItem('user_session'));
         if (session) {
             currentUserRole = session.role;
@@ -467,14 +460,6 @@
     }
     function closeLoginModal() {
         document.getElementById('modal-login').classList.add('hidden');
-    }
-
-    // ===== FITUR SIGN IN (DAFTAR AKUN BARU) =====
-    function getRegisteredUsers() {
-        return JSON.parse(localStorage.getItem('registered_users')) || {};
-    }
-    function saveRegisteredUsers(data) {
-        localStorage.setItem('registered_users', JSON.stringify(data));
     }
 
     // Menampilkan pesan error DI DALAM card Login (bukan toast, supaya tidak tertutup modal)
@@ -519,12 +504,14 @@
         document.getElementById('signin-confirm-password').value = "";
     }
 
-    function processSignIn() {
+    // ===== SIGN IN (DAFTAR AKUN BARU) - via Apps Script / Spreadsheet =====
+    async function processSignIn() {
         const userInput = document.getElementById('signin-username');
         const user = userInput.value.trim();
         const pass = document.getElementById('signin-password').value.trim();
         const passConfirm = document.getElementById('signin-confirm-password').value.trim();
         const errLabel = document.getElementById('signin-username-error');
+        const btn = document.getElementById('btn-signin-submit');
 
         errLabel.classList.add('hidden');
         hideSigninError();
@@ -539,72 +526,109 @@
             return;
         }
 
-        const key = user.toLowerCase();
-        const registeredUsers = getRegisteredUsers();
-
-        // VALIDASI: 1 username tidak boleh sama dengan lainnya
-        if (key === 'admin' || registeredUsers[key]) {
+        if (user.toLowerCase() === 'admin') {
             errLabel.classList.remove('hidden');
             return;
         }
 
-        // Simpan akun baru
-        registeredUsers[key] = { username: user, password: pass };
-        saveRegisteredUsers(registeredUsers);
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = "Memproses Pendaftaran...";
 
-        // Otomatis login setelah daftar berhasil
-        const session = { username: user, role: 'customer' };
-        localStorage.setItem('user_session', JSON.stringify(session));
-        currentUserRole = 'customer';
-        currentUsername = user;
+        try {
+            const res = await fetch(SPREADSHEET_API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain" },
+                body: JSON.stringify({ action: "register", username: user, password: pass })
+            });
+            const result = await res.json();
 
-        updateAuthUI(true);
-        closeLoginModal();
-        showToast(`Pendaftaran berhasil! Selamat datang, ${user}`, "success");
-        filterProducts();
+            if (!result.success) {
+                if ((result.message || "").toLowerCase().includes("digunakan")) {
+                    errLabel.classList.remove('hidden');
+                } else {
+                    showSigninError(result.message || "Pendaftaran gagal, silakan coba lagi.");
+                }
+                return;
+            }
+
+            // Otomatis login setelah daftar berhasil
+            const session = { username: result.username || user, role: 'customer' };
+            localStorage.setItem('user_session', JSON.stringify(session));
+            currentUserRole = 'customer';
+            currentUsername = session.username;
+
+            updateAuthUI(true);
+            closeLoginModal();
+            showToast(`Pendaftaran berhasil! Selamat datang, ${currentUsername}`, "success");
+            filterProducts();
+        } catch (err) {
+            console.error(err);
+            showSigninError("Gagal terhubung ke server database. Coba lagi.");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
     }
 
-    function processLogin() {
+    // ===== LOGIN - via Apps Script / Spreadsheet (admin tetap hardcode) =====
+    async function processLogin() {
         hideLoginError();
         const user = document.getElementById('login-username').value.trim();
         const pass = document.getElementById('login-password').value.trim();
+        const btn = document.getElementById('btn-login-submit');
 
         if (!user || !pass) {
             showLoginError("Nama Pengguna dan Kata Sandi wajib diisi!");
             return;
         }
 
-        let role = 'customer';
-        let finalUsername = user;
-
+        // Akses khusus Admin tetap sama seperti sebelumnya (tidak disimpan di spreadsheet)
         if (user.toLowerCase() === 'admin' && pass === 'admin123') {
-            role = 'admin';
-        } else {
-            // Cocokkan dengan akun yang sudah terdaftar lewat fitur Sign In
-            const registeredUsers = getRegisteredUsers();
-            const account = registeredUsers[user.toLowerCase()];
-
-            if (!account) {
-                showLoginError("Akun tidak ditemukan. Silakan Sign In (daftar) terlebih dahulu!");
-                return;
-            }
-            if (account.password !== pass) {
-                showLoginError("Kata Sandi salah, silakan coba lagi!");
-                return;
-            }
-            finalUsername = account.username;
+            const session = { username: user, role: 'admin' };
+            localStorage.setItem('user_session', JSON.stringify(session));
+            currentUserRole = 'admin';
+            currentUsername = user;
+            updateAuthUI(true);
+            closeLoginModal();
+            showToast(`Selamat datang kembali, ${user}!`, "success");
+            filterProducts();
+            return;
         }
 
-        const session = { username: finalUsername, role: role };
-        localStorage.setItem('user_session', JSON.stringify(session));
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = "Memeriksa Akun...";
 
-        currentUserRole = role;
-        currentUsername = finalUsername;
+        try {
+            const res = await fetch(SPREADSHEET_API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain" },
+                body: JSON.stringify({ action: "login", username: user, password: pass })
+            });
+            const result = await res.json();
 
-        updateAuthUI(true);
-        closeLoginModal();
-        showToast(`Selamat datang kembali, ${finalUsername}!`, "success");
-        filterProducts();
+            if (!result.success) {
+                showLoginError(result.message || "Akun tidak ditemukan. Silakan Sign In (daftar) terlebih dahulu!");
+                return;
+            }
+
+            const session = { username: result.username || user, role: 'customer' };
+            localStorage.setItem('user_session', JSON.stringify(session));
+            currentUserRole = 'customer';
+            currentUsername = session.username;
+
+            updateAuthUI(true);
+            closeLoginModal();
+            showToast(`Selamat datang kembali, ${currentUsername}!`, "success");
+            filterProducts();
+        } catch (err) {
+            console.error(err);
+            showLoginError("Gagal terhubung ke server database. Coba lagi.");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
     }
 
     function logout() {
@@ -1000,11 +1024,12 @@ function processCheckout() {
     activeCheckoutData = {
         invoice: invoiceNum,
         date: dateStr,
-        name: currentUsername,
+        name: sName,
         phone: sPhone, 
         products: productsStr,
         total: grandTotal,
-        method: `${methodPay} (${courierName}) - Alamat: ${sAddress}`
+        method: `${methodPay} (${courierName})`,
+        address: sAddress
     };
 
     document.getElementById('payment-modal-total').innerText = formatMoney(grandTotal);
@@ -1096,6 +1121,8 @@ function processDirectCheckout() {
     localStorage.setItem('lokal_orders_' + currentUsername.trim(), JSON.stringify(lokalOrders));
 
     // 3. Kirim data ke Google Apps Script menggunakan mode: "no-cors" (Kebal dari blokir browser)
+    // Apps Script (backend baru) akan otomatis mengunggah gambar ini ke Google Drive
+    // dan menyimpan link-nya di kolom imageUrl pada Spreadsheet.
     fetch(SPREADSHEET_API_URL, {
         method: "POST",
         mode: "no-cors", 
@@ -1184,7 +1211,8 @@ function fetchOrderHistory() {
                 const inv = o.invoice || o.Invoice || "-";
                 const tgl = o.date || o.Date || "-";
                 const prod = o.products || o.Products || "Produk Pilihan";
-                const alm = o.method || o.Method || o.address || "-";
+                const alm = o.method || o.Method || "-";
+                const addr = o.address || o.Address || "-";
                 const totalBayar = Number(o.total || o.Total || 0);
                 const img = o.imageUrl || o.ImageUrl || o.imageBlob || "#";
                 const stat = (o.status || o.Status || "Pending").trim();
@@ -1215,9 +1243,13 @@ function fetchOrderHistory() {
                         <div class="text-xs text-gray-300 space-y-1">
                             <p class="font-bold text-gray-200"><span class="text-gray-400 font-normal">Item:</span> ${prod}</p>
                             <p class="text-gray-400 text-[11px] flex items-start gap-1">
-                                <i class="fa-solid fa-truck text-gray-500 mt-0.5"></i>
-                                <span>${alm}</span>
-                            </p>
+    <i class="fa-solid fa-truck text-gray-500 mt-0.5"></i>
+    <span>${alm}</span>
+</p>
+<p class="text-gray-400 text-[11px] flex items-start gap-1">
+    <i class="fa-solid fa-location-dot text-gray-500 mt-0.5"></i>
+    <span>${addr}</span>
+</p>
                         </div>
                         <div class="flex items-center justify-between pt-2 border-t border-gray-700/30">
                             <div class="flex flex-col">
