@@ -69,7 +69,10 @@
                     <button onclick="fetchOrders(true)" id="btn-refresh" class="text-xs font-bold bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-2 rounded-xl border border-gray-600 transition flex items-center gap-1.5">
                         <i class="fa-solid fa-rotate"></i> <span class="hidden sm:inline">Refresh</span>
                     </button>
-                    <button onclick="adminLogout()" class="text-xs font-bold bg-red-500/10 hover:bg-red-500/20 text-red-400 px-3 py-2 rounded-xl border border-red-500/20 transition flex items-center gap-1.5">
+                    <button onclick="confirmClearAllOrders()" id="btn-clear-orders" class="text-xs font-bold bg-red-500/10 hover:bg-red-500/20 text-red-400 px-3 py-2 rounded-xl border border-red-500/20 transition flex items-center gap-1.5" title="Hapus semua data pesanan">
+                        <i class="fa-solid fa-trash-can"></i> <span class="hidden sm:inline">Hapus Semua</span>
+                    </button>
+                    <button onclick="adminLogout()" class="text-xs font-bold bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-2 rounded-xl border border-gray-600 transition flex items-center gap-1.5">
                         <i class="fa-solid fa-right-from-bracket"></i> <span class="hidden sm:inline">Keluar</span>
                     </button>
                 </div>
@@ -139,7 +142,7 @@
     </div>
 
 <script>
-    const SPREADSHEET_API_URL = "https://script.google.com/macros/s/AKfycbxsJMud7S4ZZLHRUzRNJAXNJMpPVkgg2dPP5JZNjF7wqzuZv10nh1Ld87prSZQjPVlsKQ/exec";
+    const SPREADSHEET_API_URL = "https://script.google.com/macros/s/AKfycbwicWEk1yyZNs8xre8V0fZadGXX5VP-eZ42JkrLuErprckEsCQzyjemH3m6lpRj3d93/exec";
 
     let allOrders = [];
     let statusFilter = 'Semua';
@@ -328,7 +331,10 @@
                 </td>
                 <td class="px-4 py-3 text-gray-300 max-w-[220px]"><div class="line-clamp-2">${o.products || '-'}</div></td>
                 <td class="px-4 py-3 text-right font-mono font-black text-gray-100 whitespace-nowrap">${formatMoney(total)}</td>
-                <td class="px-4 py-3 text-gray-400 max-w-[200px]"><div class="line-clamp-2 text-[11px]">${o.method || '-'}</div></td>
+                <td class="px-4 py-3 text-gray-400 max-w-[200px]">
+    <div class="line-clamp-2 text-[11px]">${o.method || '-'}</div>
+    <div class="text-[10px] text-gray-500 mt-0.5"><i class="fa-solid fa-location-dot mr-1"></i>${o.address || '-'}</div>
+</td>
                 <td class="px-4 py-3 text-center">${proofLinkHtml(o)}</td>
                 <td class="px-4 py-3 text-center">${statusBadgeHtml(o.status)}</td>
                 <td class="px-4 py-3 text-center">${actionButtonsHtml(o)}</td>
@@ -357,6 +363,9 @@
                 <div class="text-[11px] text-gray-400">
                     <span class="text-gray-500">Metode:</span> ${o.method || '-'}
                 </div>
+                <div class="text-[11px] text-gray-400 mt-1">
+    <span class="text-gray-500">Alamat:</span> ${o.address || '-'}
+</div>
                 <div class="flex items-center justify-between pt-2 border-t border-gray-700/50">
                     <span class="font-mono font-black text-gray-100 text-sm">${formatMoney(total)}</span>
                     ${proofLinkHtml(o)}
@@ -400,6 +409,50 @@
             showToast("Gagal mengirim perubahan status ke server.", "error");
             // Refresh agar tampilan kembali sesuai data server yang sebenarnya
             fetchOrders();
+        });
+    }
+
+    // HAPUS SEMUA DATA PESANAN (RESET)
+    function confirmClearAllOrders() {
+        const step1 = confirm("PERINGATAN!\n\nIni akan menghapus SEMUA data pesanan di spreadsheet secara permanen (tidak bisa dikembalikan).\n\nLanjutkan?");
+        if (!step1) return;
+        const step2 = prompt('Ketik "HAPUS" (huruf besar) untuk konfirmasi ulang penghapusan seluruh data pesanan:');
+        if (step2 !== "HAPUS") {
+            showToast("Penghapusan dibatalkan.", "blue");
+            return;
+        }
+        clearAllOrders();
+    }
+
+    function clearAllOrders() {
+        const btn = document.getElementById('btn-clear-orders');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span class="hidden sm:inline">Menghapus</span>`;
+        }
+
+        fetch(SPREADSHEET_API_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({ action: "clearOrders" })
+        })
+        .then(() => {
+            showToast("Seluruh data pesanan berhasil dihapus.", "success");
+            allOrders = [];
+            renderOrders();
+            updateStats();
+            setTimeout(() => fetchOrders(), 1500);
+        })
+        .catch(err => {
+            console.error(err);
+            showToast("Gagal menghapus data pesanan di server.", "error");
+        })
+        .finally(() => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-trash-can"></i> <span class="hidden sm:inline">Hapus Semua</span>`;
+            }
         });
     }
 
