@@ -1025,6 +1025,7 @@ function processCheckout() {
         invoice: invoiceNum,
         date: dateStr,
         name: sName,
+        username: currentUsername,
         phone: sPhone, 
         products: productsStr,
         total: grandTotal,
@@ -1189,8 +1190,8 @@ function fetchOrderHistory() {
             // Filter data pesanan milik user aktif atau yang ada di lokal_orders browser
             const myOrders = orders.filter(o => {
                 const orderInvoice = (o.invoice || o.Invoice || "").trim();
-                const nameInSheet = (o.name || o.Name || "").trim().toLowerCase();
-                return lokalOrders.includes(orderInvoice) || nameInSheet === userTarget;
+                const usernameInSheet = (o.username || o.Username || "").trim().toLowerCase();
+return lokalOrders.includes(orderInvoice) || usernameInSheet === userTarget;
             });
 
             if (myOrders.length === 0) {
