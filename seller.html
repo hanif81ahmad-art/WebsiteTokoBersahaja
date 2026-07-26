@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jual Produk Anda - Toko Bersahaja</title>
+    <meta name="description" content="Daftarkan dan jual produk Anda sendiri di Toko Bersahaja, platform e-commerce PasarInstan v7.">
+
+    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/hanif81ahmad-art/WebsiteTokoBersahaja/refs/heads/main/LOGO.png">
+
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --navy-primary: #0A192F;
+            --navy-secondary: #172A45;
+            --gold-accent: #D4AF37;
+            --gold-light: #F3E5AB;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #172A45; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #D4AF37; border-radius: 4px; }
+
+        @keyframes viewFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .view-fade-in { animation: viewFadeIn 0.35s ease-out; }
+
+        @keyframes rowIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .row-in { animation: rowIn 0.3s ease-out; }
+
+        .drop-zone { transition: all 0.2s ease; }
+        .drop-zone.drag-over { border-color: #D4AF37; background: rgba(212,175,55,0.08); }
+
+        .thumb-tile { aspect-ratio: 1 / 1; }
+    </style>
+</head>
+<body class="bg-[#0A192F] text-[#E6F1FF] font-sans min-h-screen flex flex-col transition-colors duration-300">
+
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-3 pointer-events-none"></div>
+
+    <!-- NAVIGATION BAR -->
+    <nav class="bg-[#172A45] border-b border-[#D4AF37]/30 sticky top-0 z-40 shadow-lg">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 gap-4">
+                <a href="index.html" class="flex items-center gap-2 shrink-0">
+                    <img src="https://raw.githubusercontent.com/hanif81ahmad-art/WebsiteTokoBersahaja/refs/heads/main/LOGO.png" alt="Logo Toko Bersahaja" class="w-10 h-10 object-contain rounded-xl shadow-md shadow-[#D4AF37]/20">
+                    <span class="text-lg md:text-xl font-black bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] bg-clip-text text-transparent tracking-wider hidden sm:inline-block">Toko Bersahaja<span class="text-xs text-[#D4AF37] ml-1">Seller</span></span>
+                </a>
+
+                <div class="flex items-center gap-3 sm:gap-4 ml-auto">
+                    <a href="index.html" class="text-[#8892B0] hover:text-[#D4AF37] text-xs font-bold flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-store"></i> <span class="hidden sm:inline">Kembali ke Toko</span>
+                    </a>
+                    <div id="user-logged-info" class="hidden flex items-center gap-1.5 border-l border-[#D4AF37]/30 pl-3">
+                        <div class="w-7 h-7 rounded-full bg-[#D4AF37] flex items-center justify-center text-xs font-bold text-[#0A192F] shadow-inner" id="user-avatar">U</div>
+                        <span class="text-xs font-medium max-w-[80px] truncate hidden sm:inline-block" id="user-nav-name">User</span>
+                        <button onclick="logoutSeller()" class="text-red-400 hover:text-red-500 text-xs p-1" title="Log Keluar"><i class="fa-solid fa-power-off"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ================= GATE: BELUM LOGIN ================= -->
+    <div id="gate-guest" class="hidden flex-1 flex items-center justify-center p-4">
+        <div class="bg-[#172A45] border border-[#D4AF37]/30 rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl text-center view-fade-in">
+            <div class="inline-flex bg-gradient-to-r from-[#D4AF37] to-[#F3E5AB] p-3 rounded-2xl text-[#0A192F] shadow-md shadow-[#D4AF37]/20 mb-1">
+                <i class="fa-solid fa-shop text-xl"></i>
+            </div>
+            <h1 class="text-lg font-black">Mulai Berjualan</h1>
+            <p class="text-xs text-[#8892B0]">Masuk atau daftar akun terlebih dahulu untuk mengajukan produk jualan Anda sendiri di Toko Bersahaja.</p>
+            <div class="pt-2 space-y-2">
+                <button onclick="openAuthModal('login')" class="w-full bg-[#D4AF37] hover:bg-[#F3E5AB] text-[#0A192F] font-black text-xs py-2.5 rounded-xl transition shadow-lg">Masuk Akun</button>
+                <button onclick="openAuthModal('signin')" class="w-full bg-[#0A192F] hover:bg-[#0A192F]/70 text-[#D4AF37] font-bold text-xs py-2.5 rounded-xl transition border border-[#D4AF37]/30">Daftar Akun Baru</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= DASHBOARD SELLER ================= -->
+    <main id="seller-dashboard" class="hidden flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 space-y-6 view-fade-in">
+
+        <div>
+            <h1 class="text-xl md:text-2xl font-black text-[#E6F1FF]">Jual Produk Anda</h1>
+            <p class="text-xs text-[#8892B0] mt-1">Ajukan produk untuk dijual di Toko Bersahaja. Produk akan tampil di etalase setelah disetujui admin.</p>
+        </div>
+
+        <!-- STATS -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+            <div class="bg-[#172A45] border border-[#D4AF37]/20 rounded-2xl p-4 shadow-sm">
+                <div class="text-[10px] text-[#8892B0] font-bold uppercase tracking-wider">Total Produk</div>
+                <div id="stat-total" class="text-2xl font-black text-[#E6F1FF] mt-1 font-mono">0</div>
+            </div>
+            <div class="bg-[#172A45] border border-[#D4AF37]/20 rounded-2xl p-4 shadow-sm">
+                <div class="text-[10px] text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1"><i class="fa-solid fa-clock"></i> Menunggu Review</div>
+                <div id="stat-pending" class="text-2xl font-black text-amber-400 mt-1 font-mono">0</div>
+            </div>
+            <div class="bg-[#172A45] border border-[#D4AF37]/20 rounded-2xl p-4 shadow-sm">
+                <div class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Disetujui</div>
+                <div id="stat-approved" class="text-2xl font-black text-emerald-400 mt-1 font-mono">0</div>
+            </div>
+            <div class="bg-[#172A45] border border-[#D4AF37]/20 rounded-2xl p-4 shadow-sm">
+                <div class="text-[10px] text-red-400 font-bold uppercase tracking-wider flex items-center gap-1"><i class="fa-solid fa-circle-xmark"></i> Ditolak</div>
+                <div id="stat-rejected" class="text-2xl font-black text-red-400 mt-1 font-mono">0</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+            <!-- FORM TAMBAH PRODUK -->
+            <div class="lg:col-span-2">
+                <div class="bg-[#172A45] border border-[#D4AF37]/30 rounded-3xl p-5 space-y-4 sticky top-24">
+                    <h2 class="text-sm font-black flex items-center gap-2"><i class="fa-solid fa-circle-plus text-[#D4AF37]"></i> Ajukan Produk Baru</h2>
+
+                    <div>
+                        <label class="text-[10px] text-[#8892B0] font-bold block mb-1">Nama Produk</label>
+                        <input type="text" id="sp-name" placeholder="Contoh: Kemeja Batik Anak" class="w-full bg-[#0A192F] text-[#E6F1FF] px-3 py-2 rounded-xl border border-[#D4AF37]/30 focus:outline-none focus:border-[#D4AF37] text-xs">
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] text-[#8892B0] font-bold block mb-1">Kategori</label>
+                        <select id="sp-category" class="w-full bg-[#0A192F] text-[#E6F1FF] px-3 py-2 rounded-xl border border-[#D4AF37]/30 focus:outline-none focus:border-[#D4AF37] text-xs">
+                            <option value="Seragam Sekolah">Seragam Sekolah</option>
+                            <option value="Seragam Praktikum">Seragam Praktikum</option>
+                            <option value="Produk Lainnya">Produk Lainnya</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[10px] text-[#8892B0] font-bold block mb-1">Harga (Rp)</label>
+                            <input type="number" min="0" id="sp-price" placeholder="150000" class="w-full bg-[#0A192F] text-[#E6F1FF] px-3 py-2 rounded-xl border border-[#D4AF37]/30 focus:outline-none focus:border-[#D4AF37] text-xs">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-[#8892B0] font-bold block mb-1">Stok</label>
+                            <input type="number" min="0" id="sp-stock" placeholder="10" class="w-full bg-[#0A192F] text-[#E6F1FF] px-3 py-2 rounded-xl border border-[#D4AF37]/30 focus:outline-none focus:border-[#D4AF37] text-xs">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] text-[#8892B0] font-bold block mb-1">Deskripsi Produk</label>
+                        <textarea id="sp-desc" rows="3" placeholder="Jelaskan bahan, ukuran, keunggulan produk..." class="w-full bg-[#0A192F] text-[#E6F1FF] px-3 py-2 rounded-xl border border-[#D4AF37]/30 focus:outline-none focus:border-[#D4AF37] text-xs resize-none"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] text-[#8892B0] font-bold block mb-1">Foto Produk (bisa lebih dari 1)</label>
+                        <label id="sp-drop-zone" class="drop-zone flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-[#D4AF37]/30 rounded-xl py-5 cursor-pointer hover:border-[#D4AF37] text-center">
+                            <i class="fa-solid fa-cloud-arrow-up text-lg text-[#D4AF37]"></i>
+                            <span class="text-[10px] text-[#8892B0] px-2" id="sp-file-label">Klik untuk pilih foto (PNG/JPG) &mdash; bisa pilih banyak sekaligus</span>
+                            <input type="file" id="sp-image-input" accept="image/*" multiple class="hidden" onchange="handleSellerImageSelect(event)">
+                        </label>
+                        <p class="text-[9px] text-[#8892B0]/80 mt-1.5 flex items-start gap-1">
+                            <i class="fa-solid fa-circle-info mt-0.5"></i>
+                            <span>Setiap foto otomatis dipotong ke rasio 1:1 (persegi, bagian tengah) agar tampil rapi dan tidak terpotong aneh di etalase.</span>
+                        </p>
+                        <div id="sp-image-grid" class="hidden grid grid-cols-4 gap-2 mt-2"></div>
+                    </div>
+
+                    <button onclick="submitSellerProduct()" id="btn-submit-product" class="w-full bg-[#D4AF37] hover:bg-[#F3E5AB] text-[#0A192F] font-black text-xs py-3 rounded-xl transition shadow-lg flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-paper-plane"></i> Ajukan Produk untuk Dijual
+                    </button>
+                    <p class="text-[10px] text-[#8892B0] text-center">Produk akan direview oleh admin sebelum tampil di etalase toko.</p>
+                </div>
+            </div>
+
+            <!-- DAFTAR PRODUK SAYA -->
+            <div class="lg:col-span-3">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-black flex items-center gap-2"><i class="fa-solid fa-boxes-stacked text-[#D4AF37]"></i> Produk Saya</h2>
+                    <button onclick="fetchMyProducts()" class="text-[10px] font-bold bg-[#172A45] hover:bg-[#0A192F] text-[#D4AF37] px-3 py-1.5 rounded-xl border border-[#D4AF37]/30 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-rotate"></i> Muat Ulang
+                    </button>
+                </div>
+                <div id="my-products-list" class="space-y-3 custom-scrollbar max-h-[720px] overflow-y-auto pr-1">
+                    <div class="text-center py-10 text-[#8892B0] text-xs">
+                        <i class="fa-solid fa-spinner fa-spin mr-1"></i> Memuat produk Anda...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ================= MODAL LOGIN / DAFTAR ================= -->
+    <div id="modal-auth" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+        <div class="bg-[#172A45] border border-[#D4AF37]/30 rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl relative">
+            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-[#8892B0] hover:text-[#D4AF37]"><i class="fa-solid fa-xmark"></i></button>
+
+            <!-- LOGIN -->
+            <div id="auth-login-section">
+                <h2 class="text-base font-black text-center mb-1">Masuk Akun</h2>
+                <p class="text-[11px] text-[#8892B0] text-center mb-3">Masuk untuk mulai mengajukan produk jualan.</p>
+                <div id="auth-login-error" class="hidden bg-red-500/10 border border-red-500/30 text-red-400 text-[11px] font-semibold rounded-xl px-3 py-2 mb-2"><span id="auth-login-error-text"></span></div>
+                <div class="space-y-2">
+                    <input type="text" id="auth-login-username" placeholder="Nama Pengguna" class="w-full bg-[#0A192F] text-[#E6F1FF] px-3 py-2 rounded-xl border border-[#D4AF37]/30 focus:outline-none focus:border-[#D4AF37] text-xs">
+                    <input type="password" id="auth-login-password" placeholder="Kata Sandi" onkeydown="if(event.key==='Enter') sellerLogin()" class="w-full bg-[#0A192F] text-[#E6F1FF] px-3 py-2 rounded-xl border border-[#D4AF37]/30 focus:outline-none focus:border-[#D4AF37] text-xs">
+                </div>
+                <button id="btn-auth-login" onclick="sellerLogin()" class="w-full bg-[#D4AF37] hover:bg-[#F3E5AB] text-[#0A192F] font-black text-xs py-2.5 rounded-xl transition shadow-lg mt-3">Masuk</button>
+                <p class="text-center text-[11px] text-[#8892B0] mt-3">Belum punya akun? <button onclick="switchAuthSection('signin')" class="text-[#D4AF37] font-bold hover:underline">Daftar di sini</button></p>
+            </div>
+
+            <!-- DAFTAR -->
+            <div id="auth-signin-section" class="hidden">
+                <h2 class="text-base font-black text-center mb-1">Daftar Akun Baru</h2>
+                <p class="text-[11px] text-[#8892B0] text-center mb-3">Buat akun untuk mulai berjualan di Toko Bersahaja.</p>
+                <div id="auth-signin-error" class="hidden bg-red-500/10 border border-red-500/30 text-red-400 text-[11px] font-semibold rounded-xl px-3 py-2 mb-2"><span id="auth-signin-error-text"></span></div>
+                <div class="space-y-2">
+                    <input type="text" id="auth-signin-username" placeholder="Nama Pengguna" class="w-full bg-[#0A192F] text-[#E6F1FF] px-3 py-2 rounded-xl border border-[#D4AF37]/30 focus:outline-none focus:border-[#D4AF37] text-xs">
+                    <input type="password" id="auth-signin-password" placeholder="Kata Sandi" class="w-full bg-[#0A192F] text-[#E6F1FF] px-3 py-2 rounded-xl border border-[#D4AF37]/30 focus:outline-none focus:border-[#D4AF37] text-xs">
+                    <input type="password" id="auth-signin-confirm" placeholder="Konfirmasi Kata Sandi" class="w-full bg-[#0A192F] text-[#E6F1FF] px-3 py-2 rounded-xl border border-[#D4AF37]/30 focus:outline-none focus:border-[#D4AF37] text-xs">
+                </div>
+                <button id="btn-auth-signin" onclick="sellerSignIn()" class="w-full bg-[#D4AF37] hover:bg-[#F3E5AB] text-[#0A192F] font-black text-xs py-2.5 rounded-xl transition shadow-lg mt-3">Daftar</button>
+                <p class="text-center text-[11px] text-[#8892B0] mt-3">Sudah punya akun? <button onclick="switchAuthSection('login')" class="text-[#D4AF37] font-bold hover:underline">Masuk di sini</button></p>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // ======================================================================
+    // KONFIGURASI BACKEND (sama dengan index.html / admin.html)
+    // ======================================================================
+    const SPREADSHEET_API_URL = "https://script.google.com/macros/s/AKfycbwicWEk1yyZNs8xre8V0fZadGXX5VP-eZ42JkrLuErprckEsCQzyjemH3m6lpRj3d93/exec";
+
+    // CATATAN UNTUK BACKEND (Code.gs) — lihat penjelasan lengkap di pesan balasan.
+    // Halaman ini memakai 3 aksi di Code.gs:
+    //   1. doPost -> action "submitProduct"      : simpan pengajuan produk baru (status: "Pending"),
+    //      sekarang mengirim field "images" berupa ARRAY base64 (bukan 1 gambar / imageBase64 lagi).
+    //   2. doGet  -> ?action=getSellerProducts&username=... : kembalikan produk milik seller tsb,
+    //      setiap produk memiliki field "images" berupa ARRAY url.
+    //   3. doPost -> action "deleteSellerProduct" : hapus pengajuan produk berstatus Pending
+
+    const MAX_PRODUCT_IMAGES = 8;
+    const SQUARE_IMAGE_SIZE = 900; // px, hasil crop 1:1
+
+    let currentUsername = '';
+    let productImages = []; // [{ id, base64, name }]
+
+    window.addEventListener('DOMContentLoaded', () => {
+        initSellerAuth();
+    });
+
+    function initSellerAuth() {
+        const session = JSON.parse(localStorage.getItem('user_session'));
+        if (session && session.username) {
+            currentUsername = session.username;
+            document.getElementById('gate-guest').classList.add('hidden');
+            document.getElementById('seller-dashboard').classList.remove('hidden');
+            document.getElementById('user-logged-info').classList.remove('hidden');
+            document.getElementById('user-nav-name').innerText = currentUsername;
+            document.getElementById('user-avatar').innerText = currentUsername.charAt(0).toUpperCase();
+            fetchMyProducts();
+        } else {
+            document.getElementById('gate-guest').classList.remove('hidden');
+            document.getElementById('seller-dashboard').classList.add('hidden');
+        }
+    }
+
+    function logoutSeller() {
+        localStorage.removeItem('user_session');
+        currentUsername = '';
+        window.location.href = 'index.html';
+    }
+
+    // ===== MODAL AUTH =====
+    function openAuthModal(mode) {
+        switchAuthSection(mode);
+        document.getElementById('modal-auth').classList.remove('hidden');
+    }
+    function closeAuthModal() {
+        document.getElementById('modal-auth').classList.add('hidden');
+    }
+    function switchAuthSection(mode) {
+        const loginSec = document.getElementById('auth-login-section');
+        const signinSec = document.getElementById('auth-signin-section');
+        if (mode === 'signin') {
+            loginSec.classList.add('hidden');
+            signinSec.classList.remove('hidden');
+        } else {
+            signinSec.classList.add('hidden');
+            loginSec.classList.remove('hidden');
+        }
+        document.getElementById('auth-login-error').classList.add('hidden');
+        document.getElementById('auth-signin-error').classList.add('hidden');
+    }
+    function showAuthLoginError(msg) {
+        document.getElementById('auth-login-error-text').innerText = msg;
+        document.getElementById('auth-login-error').classList.remove('hidden');
+    }
+    function showAuthSigninError(msg) {
+        document.getElementById('auth-signin-error-text').innerText = msg;
+        document.getElementById('auth-signin-error').classList.remove('hidden');
+    }
+
+    // ===== LOGIN =====
+    async function sellerLogin() {
+        document.getElementById('auth-login-error').classList.add('hidden');
+        const user = document.getElementById('auth-login-username').value.trim();
+        const pass = document.getElementById('auth-login-password').value.trim();
+        const btn = document.getElementById('btn-auth-login');
+
+        if (!user || !pass) { showAuthLoginError("Nama Pengguna dan Kata Sandi wajib diisi!"); return; }
+
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = "Memeriksa Akun...";
+        try {
+            const res = await fetch(SPREADSHEET_API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain" },
+                body: JSON.stringify({ action: "login", username: user, password: pass })
+            });
+            const result = await res.json();
+            if (!result.success) { showAuthLoginError(result.message || "Akun tidak ditemukan."); return; }
+
+            const session = { username: result.username || user, role: 'customer' };
+            localStorage.setItem('user_session', JSON.stringify(session));
+            closeAuthModal();
+            showToast(`Selamat datang, ${session.username}!`, "success");
+            initSellerAuth();
+        } catch (err) {
+            console.error(err);
+            showAuthLoginError("Gagal terhubung ke server database.");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
+    }
+
+    // ===== DAFTAR =====
+    async function sellerSignIn() {
+        document.getElementById('auth-signin-error').classList.add('hidden');
+        const user = document.getElementById('auth-signin-username').value.trim();
+        const pass = document.getElementById('auth-signin-password').value.trim();
+        const confirmPass = document.getElementById('auth-signin-confirm').value.trim();
+        const btn = document.getElementById('btn-auth-signin');
+
+        if (!user || !pass || !confirmPass) { showAuthSigninError("Semua kolom wajib diisi!"); return; }
+        if (pass !== confirmPass) { showAuthSigninError("Konfirmasi Kata Sandi tidak sesuai!"); return; }
+        if (user.toLowerCase() === 'admin') { showAuthSigninError("Nama pengguna tidak dapat digunakan."); return; }
+
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = "Memproses...";
+        try {
+            const res = await fetch(SPREADSHEET_API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain" },
+                body: JSON.stringify({ action: "register", username: user, password: pass })
+            });
+            const result = await res.json();
+            if (!result.success) { showAuthSigninError(result.message || "Pendaftaran gagal."); return; }
+
+            const session = { username: result.username || user, role: 'customer' };
+            localStorage.setItem('user_session', JSON.stringify(session));
+            closeAuthModal();
+            showToast(`Akun berhasil dibuat! Selamat datang, ${session.username}`, "success");
+            initSellerAuth();
+        } catch (err) {
+            console.error(err);
+            showAuthSigninError("Gagal terhubung ke server database.");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
+    }
+
+    // ===== UPLOAD FOTO PRODUK (MULTI, AUTO-CROP 1:1) =====
+    function handleSellerImageSelect(event) {
+        const files = Array.from(event.target.files || []);
+        event.target.value = ""; // reset supaya bisa pilih file yang sama lagi nanti
+        if (!files.length) return;
+
+        const remainingSlots = MAX_PRODUCT_IMAGES - productImages.length;
+        if (remainingSlots <= 0) {
+            showToast(`Maksimal ${MAX_PRODUCT_IMAGES} foto per produk.`, "error");
+            return;
+        }
+
+        const filesToProcess = files.slice(0, remainingSlots);
+        if (files.length > remainingSlots) {
+            showToast(`Hanya ${remainingSlots} foto ditambahkan (batas maksimal ${MAX_PRODUCT_IMAGES}).`, "error");
+        }
+
+        filesToProcess.forEach(file => {
+            if (!file.type.startsWith('image/')) {
+                showToast("Salah satu berkas dilewati karena bukan gambar (PNG/JPG)!", "error");
+                return;
+            }
+            cropImageToSquare(file, SQUARE_IMAGE_SIZE)
+                .then(base64 => {
+                    productImages.push({
+                        id: 'img_' + Date.now() + '_' + Math.floor(Math.random() * 10000),
+                        base64: base64,
+                        name: file.name
+                    });
+                    renderSellerImageGrid();
+                })
+                .catch(err => {
+                    console.error(err);
+                    showToast(`Gagal memproses gambar "${file.name}".`, "error");
+                });
+        });
+    }
+
+    // Crop tengah gambar menjadi persegi (1:1) lalu resize ke targetSize x targetSize
+    function cropImageToSquare(file, targetSize) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onerror = () => reject(new Error("Gagal membaca berkas"));
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onerror = () => reject(new Error("Gagal memuat gambar"));
+                img.onload = () => {
+                    const side = Math.min(img.width, img.height);
+                    const sx = (img.width - side) / 2;
+                    const sy = (img.height - side) / 2;
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = targetSize;
+                    canvas.height = targetSize;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, sx, sy, side, side, 0, 0, targetSize, targetSize);
+
+                    resolve(canvas.toDataURL('image/jpeg', 0.9));
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function removeSellerImage(id) {
+        productImages = productImages.filter(img => img.id !== id);
+        renderSellerImageGrid();
+    }
+
+    function renderSellerImageGrid() {
+        const grid = document.getElementById('sp-image-grid');
+        const label = document.getElementById('sp-file-label');
+
+        if (!productImages.length) {
+            grid.classList.add('hidden');
+            grid.innerHTML = '';
+            label.innerText = "Klik untuk pilih foto (PNG/JPG) — bisa pilih banyak sekaligus";
+            return;
+        }
+
+        grid.classList.remove('hidden');
+        label.innerText = `${productImages.length} foto dipilih (klik untuk tambah lagi, maks ${MAX_PRODUCT_IMAGES})`;
+
+        grid.innerHTML = productImages.map((img, idx) => `
+            <div class="relative thumb-tile rounded-xl overflow-hidden border border-[#D4AF37]/30 group">
+                <img src="${img.base64}" class="w-full h-full object-cover">
+                ${idx === 0 ? '<span class="absolute bottom-0 left-0 right-0 bg-[#D4AF37] text-[#0A192F] text-[8px] font-black text-center py-0.5">UTAMA</span>' : ''}
+                <button type="button" onclick="removeSellerImage('${img.id}')" class="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-600 hover:bg-red-500 text-white text-[10px] flex items-center justify-center shadow-md">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+
+    // ===== SUBMIT PRODUK BARU =====
+    function submitSellerProduct() {
+        const name = document.getElementById('sp-name').value.trim();
+        const category = document.getElementById('sp-category').value;
+        const price = Number(document.getElementById('sp-price').value);
+        const stock = Number(document.getElementById('sp-stock').value);
+        const description = document.getElementById('sp-desc').value.trim();
+
+        if (!name) { showToast("Nama produk wajib diisi!", "error"); return; }
+        if (!price || price <= 0) { showToast("Harga produk tidak valid!", "error"); return; }
+        if (!stock || stock < 0) { showToast("Jumlah stok tidak valid!", "error"); return; }
+        if (!description) { showToast("Deskripsi produk wajib diisi!", "error"); return; }
+        if (!productImages.length) { showToast("Harap unggah minimal 1 foto produk!", "error"); return; }
+
+        const btn = document.getElementById('btn-submit-product');
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim Pengajuan...';
+
+        const payload = {
+            action: "submitProduct",
+            username: currentUsername,
+            name, category, price, stock, description,
+            images: productImages.map(img => img.base64),
+            imageNamePrefix: "produk_" + Date.now(),
+            status: "Pending",
+            dateSubmitted: new Date().toISOString()
+        };
+
+        fetch(SPREADSHEET_API_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify(payload)
+        })
+        .then(() => {
+            showToast("Produk berhasil diajukan! Menunggu review admin.", "success");
+            document.getElementById('sp-name').value = '';
+            document.getElementById('sp-price').value = '';
+            document.getElementById('sp-stock').value = '';
+            document.getElementById('sp-desc').value = '';
+            productImages = [];
+            renderSellerImageGrid();
+            setTimeout(fetchMyProducts, 1200);
+        })
+        .catch(err => {
+            console.error(err);
+            showToast("Gagal terhubung ke server database.", "error");
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        });
+    }
+
+    // ===== DAFTAR PRODUK MILIK SAYA =====
+    function fetchMyProducts() {
+        const container = document.getElementById('my-products-list');
+        container.innerHTML = `
+            <div class="text-center py-10 text-[#8892B0] text-xs">
+                <i class="fa-solid fa-spinner fa-spin mr-1"></i> Memuat produk Anda...
+            </div>
+        `;
+
+        const url = SPREADSHEET_API_URL + "?action=getSellerProducts&username=" + encodeURIComponent(currentUsername);
+
+        fetch(url)
+            .then(res => {
+                if (!res.ok) throw new Error("Gagal mengambil data");
+                return res.json();
+            })
+            .then(data => {
+                const items = Array.isArray(data) ? data : (data.products || []);
+                renderMyProducts(items);
+                updateSellerStats(items);
+            })
+            .catch(err => {
+                console.error(err);
+                container.innerHTML = `
+                    <div class="p-5 text-center text-red-400 bg-red-500/5 border border-red-500/20 rounded-2xl text-xs font-semibold">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> Gagal memuat produk. Pastikan backend sudah mendukung aksi "getSellerProducts".
+                    </div>
+                `;
+            });
+    }
+
+    function updateSellerStats(items) {
+        const total = items.length;
+        const pending = items.filter(p => (p.status || "Pending").toLowerCase() === "pending").length;
+        const approved = items.filter(p => (p.status || "").toLowerCase() === "approved" || (p.status || "").toLowerCase() === "disetujui").length;
+        const rejected = items.filter(p => (p.status || "").toLowerCase() === "rejected" || (p.status || "").toLowerCase() === "ditolak").length;
+        document.getElementById('stat-total').innerText = total;
+        document.getElementById('stat-pending').innerText = pending;
+        document.getElementById('stat-approved').innerText = approved;
+        document.getElementById('stat-rejected').innerText = rejected;
+    }
+
+    function statusBadge(status) {
+        const s = (status || "Pending").toLowerCase();
+        if (s === "approved" || s === "disetujui") {
+            return `<span class="px-2.5 py-1 rounded-lg text-[10px] font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"><i class="fa-solid fa-circle-check mr-1"></i>Disetujui</span>`;
+        }
+        if (s === "rejected" || s === "ditolak") {
+            return `<span class="px-2.5 py-1 rounded-lg text-[10px] font-black bg-red-500/10 text-red-400 border border-red-500/20"><i class="fa-solid fa-circle-xmark mr-1"></i>Ditolak</span>`;
+        }
+        return `<span class="px-2.5 py-1 rounded-lg text-[10px] font-black bg-amber-500/10 text-amber-400 border border-amber-500/20"><i class="fa-solid fa-clock mr-1"></i>Pending</span>`;
+    }
+
+    // Ambil array foto produk dari berbagai kemungkinan bentuk data backend
+    function getProductImages(p) {
+        if (Array.isArray(p.images) && p.images.length) return p.images;
+        if (typeof p.images === "string" && p.images.trim()) {
+            try {
+                const parsed = JSON.parse(p.images);
+                if (Array.isArray(parsed) && parsed.length) return parsed;
+            } catch (e) { /* bukan JSON, abaikan */ }
+        }
+        if (typeof p.imageUrls === "string" && p.imageUrls.trim()) {
+            try {
+                const parsed = JSON.parse(p.imageUrls);
+                if (Array.isArray(parsed) && parsed.length) return parsed;
+            } catch (e) { /* bukan JSON, abaikan */ }
+        }
+        if (p.imageUrl) return [p.imageUrl];
+        if (p.imageBase64) return [p.imageBase64];
+        return [];
+    }
+
+    function renderMyProducts(items) {
+        const container = document.getElementById('my-products-list');
+
+        if (!items || items.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-12 text-[#8892B0] text-xs bg-[#172A45]/40 rounded-2xl border border-[#D4AF37]/30 p-4">
+                    <i class="fa-solid fa-box-open text-xl mb-2 text-[#8892B0]/60 block"></i>
+                    Anda belum mengajukan produk apa pun.
+                </div>
+            `;
+            return;
+        }
+
+        items = items.slice().reverse();
+        let html = "";
+        items.forEach(p => {
+            const nm = p.name || p.Name || "Produk";
+            const cat = p.category || p.Category || "-";
+            const price = Number(p.price || p.Price || 0);
+            const stock = p.stock || p.Stock || 0;
+            const imgs = getProductImages(p);
+            const mainImg = imgs[0] || "";
+            const status = p.status || p.Status || "Pending";
+            const desc = p.description || p.Description || "";
+
+            html += `
+                <div class="row-in p-4 bg-[#172A45] border border-[#D4AF37]/30 rounded-2xl flex gap-3 hover:border-[#D4AF37] transition duration-300">
+                    <div class="w-16 h-16 rounded-xl bg-[#0A192F] shrink-0 overflow-hidden border border-[#D4AF37]/20 relative">
+                        ${mainImg ? `<img src="${mainImg}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-[#8892B0]"><i class="fa-solid fa-image"></i></div>`}
+                        ${imgs.length > 1 ? `<span class="absolute bottom-0 right-0 bg-[#0A192F]/80 text-[#D4AF37] text-[8px] font-black px-1 py-0.5 rounded-tl-md"><i class="fa-solid fa-images mr-0.5"></i>${imgs.length}</span>` : ''}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-start justify-between gap-2">
+                            <p class="text-xs font-bold text-[#E6F1FF] truncate">${nm}</p>
+                            ${statusBadge(status)}
+                        </div>
+                        <p class="text-[10px] text-[#8892B0] mt-0.5">${cat} &middot; Stok ${stock}</p>
+                        <p class="text-xs font-black text-[#D4AF37] mt-1">${formatMoney(price)}</p>
+                        ${desc ? `<p class="text-[10px] text-[#8892B0] mt-1 line-clamp-2">${desc}</p>` : ''}
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    // ===== TOAST UTILITY =====
+    function formatMoney(amount) { return "Rp " + Number(amount || 0).toLocaleString('id-ID'); }
+    function showToast(msg, type = "success") {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        let icon = "fa-circle-check", color = "bg-[#172A45] border-[#D4AF37] text-[#E6F1FF]";
+        if (type === "error") { icon = "fa-circle-xmark"; color = "bg-red-900/90 border-red-500 text-white"; }
+        const toast = document.createElement('div');
+        toast.className = `p-4 rounded-xl border flex items-center gap-2.5 shadow-xl text-xs font-bold transition duration-300 pointer-events-auto ${color}`;
+        toast.innerHTML = `<i class="fa-solid ${icon} text-sm text-[#D4AF37]"></i> <span>${msg}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.add('opacity-0');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+</script>
+</body>
+</html>
