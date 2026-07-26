@@ -3,13 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - PasarInstan</title>
+    <title>Admin Dashboard - Toko Bersahaja</title>
+    
+    <!-- Tambahkan Favicon dengan URL Langsung di Sini -->
+    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/hanif81ahmad-art/WebsiteTokoBersahaja/refs/heads/main/LOGO.png">
+
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #1f2937; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0b1329; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
 
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         .row-in { animation: fadeInUp 0.3s ease-out; }
@@ -18,31 +22,31 @@
         .pulse-dot { animation: livePulse 1.8s infinite; }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100 font-sans min-h-screen">
+<body class="bg-[#0b1329] text-gray-100 font-sans min-h-screen">
 
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-3 pointer-events-none"></div>
 
     <!-- LOGIN GATE -->
-    <div id="login-gate" class="fixed inset-0 z-40 bg-gray-900 flex items-center justify-center p-4">
-        <div class="bg-gray-800 border border-gray-700 rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
+    <div id="login-gate" class="fixed inset-0 z-40 bg-[#0b1329] flex items-center justify-center p-4">
+        <div class="bg-[#111c3a] border border-amber-500/20 rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
             <div class="text-center">
-                <div class="inline-flex bg-gradient-to-r from-orange-500 to-amber-500 p-3 rounded-2xl text-white shadow-md shadow-orange-500/20 mb-2">
+                <div class="inline-flex bg-gradient-to-r from-amber-500 to-yellow-400 p-3 rounded-2xl text-[#0b1329] shadow-md shadow-amber-500/20 mb-2 font-bold">
                     <i class="fa-solid fa-user-shield text-xl"></i>
                 </div>
                 <h1 class="text-lg font-black text-gray-100">Admin Dashboard</h1>
-                <p class="text-[11px] text-gray-400 mt-1">Masuk untuk memantau & mengonfirmasi pesanan PasarInstan.</p>
+                <p class="text-[11px] text-gray-400 mt-1">Masuk untuk memantau & mengonfirmasi pesanan Toko Bersahaja.</p>
             </div>
             <div class="space-y-3 pt-2">
                 <div>
                     <label class="text-[10px] text-gray-400 font-bold block mb-1">Username Admin</label>
-                    <input type="text" id="admin-username" placeholder="admin" class="w-full bg-gray-700 border border-gray-600 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-orange-500">
+                    <input type="text" id="admin-username" placeholder="admin" class="w-full bg-[#0b1329] border border-amber-500/20 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-amber-500">
                 </div>
                 <div>
                     <label class="text-[10px] text-gray-400 font-bold block mb-1">Kata Sandi</label>
-                    <input type="password" id="admin-password" placeholder="******" class="w-full bg-gray-700 border border-gray-600 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-orange-500" onkeydown="if(event.key==='Enter') processAdminLogin()">
+                    <input type="password" id="admin-password" placeholder="******" class="w-full bg-[#0b1329] border border-amber-500/20 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-amber-500" onkeydown="if(event.key==='Enter') processAdminLogin()">
                 </div>
             </div>
-            <button onclick="processAdminLogin()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs py-2.5 rounded-xl transition shadow-lg">Masuk Admin</button>
+            <button onclick="processAdminLogin()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-[#0b1329] font-black text-xs py-2.5 rounded-xl transition shadow-lg">Masuk Admin</button>
             <p id="login-error" class="hidden text-[11px] text-red-400 text-center font-semibold"></p>
         </div>
     </div>
@@ -51,86 +55,83 @@
     <div id="dashboard" class="hidden">
 
         <!-- NAV -->
-        <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-30 shadow-lg">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-                <div class="flex items-center gap-2 shrink-0">
-                    <div class="bg-gradient-to-r from-orange-500 to-amber-500 p-2 rounded-xl text-white shadow-md shadow-orange-500/20">
-                        <i class="fa-solid fa-bolt text-lg"></i>
-                    </div>
-                    <span class="text-base md:text-lg font-black text-gray-100 tracking-wide">PasarInstan <span class="text-orange-400">Admin</span></span>
-                </div>
+        <nav class="bg-[#111c3a] border-b border-amber-500/10 sticky top-0 z-30 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-2 shrink-0">
+            <a href="#" class="flex items-center">
+                <img src="https://raw.githubusercontent.com/hanif81ahmad-art/WebsiteTokoBersahaja/refs/heads/main/LOGO.png" alt="Logo Toko Bersahaja" class="h-10 md:h-12 w-auto object-contain">
+            </a>
+        </div>
+        
+        <div class="flex items-center gap-2 text-[11px] text-gray-400">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot hidden sm:inline-block"></span>
+            <span class="hidden sm:inline-block">Live · update terakhir <span id="last-sync" class="text-gray-300 font-semibold">-</span></span>
+        </div>
 
-                <div class="flex items-center gap-2 text-[11px] text-gray-400">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot hidden sm:inline-block"></span>
-                    <span class="hidden sm:inline-block">Live · update terakhir <span id="last-sync" class="text-gray-300 font-semibold">-</span></span>
-                </div>
-
-                <div class="flex items-center gap-2 shrink-0">
-                    <button onclick="fetchOrders(true)" id="btn-refresh" class="text-xs font-bold bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-2 rounded-xl border border-gray-600 transition flex items-center gap-1.5">
-                        <i class="fa-solid fa-rotate"></i> <span class="hidden sm:inline">Refresh</span>
-                    </button>
-                    <button onclick="confirmClearAllOrders()" id="btn-clear-orders" class="text-xs font-bold bg-red-500/10 hover:bg-red-500/20 text-red-400 px-3 py-2 rounded-xl border border-red-500/20 transition flex items-center gap-1.5" title="Hapus semua data pesanan">
-                        <i class="fa-solid fa-trash-can"></i> <span class="hidden sm:inline">Hapus Semua</span>
-                    </button>
-                    <button onclick="adminLogout()" class="text-xs font-bold bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-2 rounded-xl border border-gray-600 transition flex items-center gap-1.5">
-                        <i class="fa-solid fa-right-from-bracket"></i> <span class="hidden sm:inline">Keluar</span>
-                    </button>
-                </div>
-            </div>
-        </nav>
+        <div class="flex items-center gap-2 shrink-0">
+            <button onclick="fetchOrders(true)" id="btn-refresh" class="text-xs font-bold bg-[#1a284f] hover:bg-[#223363] text-gray-200 px-3 py-2 rounded-xl border border-amber-500/20 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate"></i> <span class="hidden sm:inline">Refresh</span>
+            </button>
+            <button onclick="adminLogout()" class="text-xs font-bold bg-[#1a284f] hover:bg-[#223363] text-gray-200 px-3 py-2 rounded-xl border border-amber-500/20 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-right-from-bracket"></i> <span class="hidden sm:inline">Keluar</span>
+            </button>
+        </div>
+    </div>
+</nav>
 
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 space-y-6">
 
             <!-- STATS -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-4">
+                <div class="bg-[#111c3a] border border-amber-500/10 rounded-2xl p-4 shadow-sm">
                     <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Total Pesanan</div>
                     <div id="stat-total" class="text-2xl font-black text-gray-100 mt-1 font-mono">0</div>
                 </div>
-                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-4">
+                <div class="bg-[#111c3a] border border-amber-500/10 rounded-2xl p-4 shadow-sm">
                     <div class="text-[10px] text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1"><i class="fa-solid fa-clock"></i> Menunggu Konfirmasi</div>
                     <div id="stat-pending" class="text-2xl font-black text-amber-400 mt-1 font-mono">0</div>
                 </div>
-                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-4">
+                <div class="bg-[#111c3a] border border-amber-500/10 rounded-2xl p-4 shadow-sm">
                     <div class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Sudah Dibayar</div>
                     <div id="stat-success" class="text-2xl font-black text-emerald-400 mt-1 font-mono">0</div>
                 </div>
-                <div class="bg-gray-800 border border-gray-700 rounded-2xl p-4">
-                    <div class="text-[10px] text-orange-400 font-bold uppercase tracking-wider">Omzet Terkonfirmasi</div>
-                    <div id="stat-revenue" class="text-2xl font-black text-orange-400 mt-1 font-mono">Rp 0</div>
+                <div class="bg-[#111c3a] border border-amber-500/10 rounded-2xl p-4 shadow-sm">
+                    <div class="text-[10px] text-amber-400 font-bold uppercase tracking-wider">Omzet Terkonfirmasi</div>
+                    <div id="stat-revenue" class="text-2xl font-black text-amber-400 mt-1 font-mono">Rp 0</div>
                 </div>
             </div>
 
             <!-- TOOLBAR -->
-            <div class="flex flex-col sm:flex-row gap-3 items-center justify-between bg-gray-800 p-4 rounded-2xl border border-gray-700">
+            <div class="flex flex-col sm:flex-row gap-3 items-center justify-between bg-[#111c3a] p-4 rounded-2xl border border-amber-500/10">
                 <div class="relative w-full sm:max-w-xs">
-                    <input type="text" id="search-input" oninput="renderOrders()" placeholder="Cari invoice / nama / no. WA..." class="w-full bg-gray-700 text-gray-200 pl-9 pr-3 py-2 rounded-xl border border-gray-600 focus:outline-none focus:border-orange-500 text-xs">
+                    <input type="text" id="search-input" oninput="renderOrders()" placeholder="Cari invoice / nama / no. WA..." class="w-full bg-[#0b1329] text-gray-200 pl-9 pr-3 py-2 rounded-xl border border-amber-500/20 focus:outline-none focus:border-amber-500 text-xs">
                     <div class="absolute left-3 top-2.5 text-gray-400 text-xs"><i class="fa-solid fa-magnifying-glass"></i></div>
                 </div>
                 <div class="flex gap-2 w-full sm:w-auto">
-                    <button data-filter="Semua" onclick="setStatusFilter('Semua')" class="filter-badge flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold border transition bg-orange-500 text-white border-orange-500">Semua</button>
-                    <button data-filter="Pending" onclick="setStatusFilter('Pending')" class="filter-badge flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold border transition bg-gray-700 text-gray-300 border-gray-600">Pending</button>
-                    <button data-filter="Success" onclick="setStatusFilter('Success')" class="filter-badge flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold border transition bg-gray-700 text-gray-300 border-gray-600">Success</button>
+                    <button data-filter="Semua" onclick="setStatusFilter('Semua')" class="filter-badge flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold border transition bg-gradient-to-r from-amber-500 to-yellow-500 text-[#0b1329] border-amber-500">Semua</button>
+                    <button data-filter="Pending" onclick="setStatusFilter('Pending')" class="filter-badge flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold border transition bg-[#1a284f] text-gray-300 border-amber-500/20">Pending</button>
+                    <button data-filter="Success" onclick="setStatusFilter('Success')" class="filter-badge flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold border transition bg-[#1a284f] text-gray-300 border-amber-500/20">Success</button>
                 </div>
             </div>
 
             <!-- ORDERS TABLE (desktop) -->
-            <div class="hidden lg:block bg-gray-800 border border-gray-700 rounded-3xl overflow-hidden">
+            <div class="hidden lg:block bg-[#111c3a] border border-amber-500/10 rounded-3xl overflow-hidden shadow-sm">
                 <div class="overflow-x-auto custom-scrollbar">
                     <table class="w-full text-xs">
                         <thead>
-                            <tr class="bg-gray-900/60 text-gray-400 text-[10px] uppercase tracking-wider">
+                            <tr class="bg-[#0b1329]/60 text-gray-400 text-[10px] uppercase tracking-wider border-b border-amber-500/10">
                                 <th class="text-left font-bold px-4 py-3">Invoice</th>
                                 <th class="text-left font-bold px-4 py-3">Pembeli</th>
                                 <th class="text-left font-bold px-4 py-3">Produk</th>
                                 <th class="text-right font-bold px-4 py-3">Total</th>
                                 <th class="text-left font-bold px-4 py-3">Metode</th>
+                                <th class="text-left font-bold px-4 py-3">Catatan / Deskripsi</th>
                                 <th class="text-center font-bold px-4 py-3">Bukti</th>
                                 <th class="text-center font-bold px-4 py-3">Status</th>
                                 <th class="text-center font-bold px-4 py-3">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody id="orders-table-body" class="divide-y divide-gray-700/50"></tbody>
+                        <tbody id="orders-table-body" class="divide-y divide-amber-500/10"></tbody>
                     </table>
                 </div>
             </div>
@@ -238,9 +239,9 @@
         statusFilter = f;
         document.querySelectorAll('.filter-badge').forEach(b => {
             if (b.dataset.filter === f) {
-                b.className = "filter-badge flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold border transition bg-orange-500 text-white border-orange-500";
+                b.className = "filter-badge flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold border transition bg-gradient-to-r from-amber-500 to-yellow-500 text-[#0b1329] border-amber-500";
             } else {
-                b.className = "filter-badge flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold border transition bg-gray-700 text-gray-300 border-gray-600";
+                b.className = "filter-badge flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold border transition bg-[#1a284f] text-gray-300 border-amber-500/20";
             }
         });
         renderOrders();
@@ -306,7 +307,7 @@
         if (isSuccessStatus(o.status)) {
             return `<button onclick="confirmStatusChange('${inv}','Pending')" class="text-[10px] font-bold text-amber-400 hover:text-amber-300 border border-amber-500/30 hover:bg-amber-500/10 px-2.5 py-1.5 rounded-lg transition whitespace-nowrap"><i class="fa-solid fa-rotate-left mr-1"></i>Batalkan</button>`;
         }
-        return `<button onclick="confirmStatusChange('${inv}','Success')" class="text-[10px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 px-2.5 py-1.5 rounded-lg transition shadow whitespace-nowrap"><i class="fa-solid fa-check mr-1"></i>Konfirmasi Bayar</button>`;
+        return `<button onclick="confirmStatusChange('${inv}','Success')" class="text-[10px] font-bold text-[#0b1329] bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-600 hover:to-yellow-500 px-2.5 py-1.5 rounded-lg transition shadow whitespace-nowrap"><i class="fa-solid fa-check mr-1"></i>Konfirmasi Bayar</button>`;
     }
 
     function proofLinkHtml(o) {
@@ -314,15 +315,15 @@
         if (!img || img === "#" || img === "Tidak ada gambar") {
             return `<span class="text-[10px] text-gray-500">-</span>`;
         }
-        return `<a href="${img}" target="_blank" class="text-[11px] font-bold text-orange-400 hover:underline"><i class="fa-solid fa-image mr-1"></i>Lihat</a>`;
+        return `<a href="${img}" target="_blank" class="text-[11px] font-bold text-amber-400 hover:underline"><i class="fa-solid fa-image mr-1"></i>Lihat</a>`;
     }
 
     function rowHtml(o) {
         const total = Number(o.total || 0);
         return `
-            <tr class="row-in hover:bg-gray-700/30 transition">
+            <tr class="row-in hover:bg-[#1a284f]/40 transition">
                 <td class="px-4 py-3">
-                    <div class="font-black text-orange-400 text-xs">${o.invoice || '-'}</div>
+                    <div class="font-black text-amber-400 text-xs">${o.invoice || '-'}</div>
                     <div class="text-[10px] text-gray-500">${o.date || '-'}</div>
                 </td>
                 <td class="px-4 py-3">
@@ -332,9 +333,13 @@
                 <td class="px-4 py-3 text-gray-300 max-w-[220px]"><div class="line-clamp-2">${o.products || '-'}</div></td>
                 <td class="px-4 py-3 text-right font-mono font-black text-gray-100 whitespace-nowrap">${formatMoney(total)}</td>
                 <td class="px-4 py-3 text-gray-400 max-w-[200px]">
-    <div class="line-clamp-2 text-[11px]">${o.method || '-'}</div>
-    <div class="text-[10px] text-gray-500 mt-0.5"><i class="fa-solid fa-location-dot mr-1"></i>${o.address || '-'}</div>
-</td>
+                    <div class="line-clamp-2 text-[11px]">${o.method || '-'}</div>
+                    <div class="text-[10px] text-gray-500 mt-0.5"><i class="fa-solid fa-location-dot mr-1"></i>${o.address || '-'}</div>
+                </td>
+                <!-- TAMBAHKAN KOLOM DESKRIPSI DI SINI -->
+            <td class="px-4 py-3 text-gray-300 max-w-[200px]">
+                <div class="line-clamp-3 text-[11px] italic">${o.description ? '"' + o.description + '"' : '<span class="text-gray-500 not-italic">-</span>'}</div>
+            </td>
                 <td class="px-4 py-3 text-center">${proofLinkHtml(o)}</td>
                 <td class="px-4 py-3 text-center">${statusBadgeHtml(o.status)}</td>
                 <td class="px-4 py-3 text-center">${actionButtonsHtml(o)}</td>
@@ -345,10 +350,10 @@
     function cardHtml(o) {
         const total = Number(o.total || 0);
         return `
-            <div class="row-in bg-gray-800 border border-gray-700 rounded-2xl p-4 space-y-3">
-                <div class="flex items-start justify-between gap-2 border-b border-gray-700/60 pb-2.5">
+            <div class="row-in bg-[#111c3a] border border-amber-500/10 rounded-2xl p-4 space-y-3 shadow-sm">
+                <div class="flex items-start justify-between gap-2 border-b border-amber-500/10 pb-2.5">
                     <div>
-                        <div class="font-black text-orange-400 text-xs">${o.invoice || '-'}</div>
+                        <div class="font-black text-amber-400 text-xs">${o.invoice || '-'}</div>
                         <div class="text-[10px] text-gray-500">${o.date || '-'}</div>
                     </div>
                     ${statusBadgeHtml(o.status)}
@@ -364,9 +369,14 @@
                     <span class="text-gray-500">Metode:</span> ${o.method || '-'}
                 </div>
                 <div class="text-[11px] text-gray-400 mt-1">
-    <span class="text-gray-500">Alamat:</span> ${o.address || '-'}
-</div>
-                <div class="flex items-center justify-between pt-2 border-t border-gray-700/50">
+                    <span class="text-gray-500">Alamat:</span> ${o.address || '-'}
+                </div>
+                <!-- TAMBAHKAN BAGIAN CATATAN / DESKRIPSI DI MOBILE -->
+            <div class="text-[11px] text-amber-300/90 bg-[#0b1329] p-2 rounded-xl border border-amber-500/10 mt-1">
+                <span class="text-gray-500 font-semibold block text-[10px]">Catatan Pembeli:</span> 
+                <span class="italic">${o.description ? '"' + o.description + '"' : '-'}</span>
+            </div>
+                <div class="flex items-center justify-between pt-2 border-t border-amber-500/10">
                     <span class="font-mono font-black text-gray-100 text-sm">${formatMoney(total)}</span>
                     ${proofLinkHtml(o)}
                 </div>
@@ -385,14 +395,11 @@
     function updateOrderStatus(invoice, newStatus) {
         showToast(`Memproses perubahan status ${invoice}...`, "blue");
 
-        // Update tampilan secara optimis dulu agar admin langsung melihat hasilnya
         const target = allOrders.find(o => (o.invoice || '') === invoice);
         if (target) target.status = newStatus;
         renderOrders();
         updateStats();
 
-        // mode no-cors + Content-Type text/plain: pola yang sama dipakai di index.html,
-        // supaya tidak terkena pemblokiran CORS preflight dari Apps Script
         fetch(SPREADSHEET_API_URL, {
             method: "POST",
             mode: "no-cors",
@@ -401,13 +408,11 @@
         })
         .then(() => {
             showToast(`Status ${invoice} diperbarui menjadi ${newStatus}.`, "success");
-            // Sinkronisasi ulang dari server untuk memastikan datanya benar-benar tersimpan
             setTimeout(() => fetchOrders(), 1500);
         })
         .catch(err => {
             console.error(err);
             showToast("Gagal mengirim perubahan status ke server.", "error");
-            // Refresh agar tampilan kembali sesuai data server yang sebenarnya
             fetchOrders();
         });
     }
