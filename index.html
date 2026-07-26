@@ -10,6 +10,9 @@
     <title>Toko Bersahaja - Live Production E-Commerce</title>
     <meta name="description" content="Platform e-commerce modern, cepat, dan instan untuk kebutuhan belanja Anda di PasarInstan v7.">
 
+    <!-- Favicon dengan URL Langsung -->
+    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/hanif81ahmad-art/WebsiteTokoBersahaja/refs/heads/main/LOGO.png">
+
     <!-- Open Graph / Facebook / WhatsApp / LinkedIn -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://tokobersahaja.vercel.app/">
@@ -57,6 +60,9 @@
             aspect-ratio: 3 / 1;
         }
     </style>
+
+<link rel="icon" type="image/png" href="favicon.png">
+
 </head>
 <body class="bg-[#0A192F] text-[#E6F1FF] font-sans min-h-screen flex flex-col transition-colors duration-300" id="app-body">
 
@@ -214,7 +220,9 @@
                         <input type="text" id="shipping-name" placeholder="Nama Lengkap Penerima" class="w-full bg-[#0A192F] text-[#E6F1FF] text-xs px-3 py-2 rounded-xl border border-[#D4AF37]/40 focus:outline-none focus:border-[#D4AF37]">
                         <input type="text" id="shipping-phone" placeholder="Nomor WhatsApp Aktif (e.g., 0812345678)" class="w-full bg-[#0A192F] text-[#E6F1FF] text-xs px-3 py-2 rounded-xl border border-[#D4AF37]/40 focus:outline-none focus:border-[#D4AF37]">
                         <textarea id="shipping-address" rows="2" placeholder="Alamat Lengkap Pengiriman..." class="w-full bg-[#0A192F] text-[#E6F1FF] text-xs px-3 py-2 rounded-xl border border-[#D4AF37]/40 focus:outline-none focus:border-[#D4AF37] resize-none"></textarea>
-                    </div>
+                    <!-- TAMBAHKAN FORM DESKRIPSI / CATATAN PESANAN DI SINI -->
+    <textarea id="order-description" rows="2" placeholder="Catatan atau deskripsi tambahan pesanan (Opsional)..." class="w-full bg-[#0A192F] text-[#E6F1FF] text-xs px-3 py-2 rounded-xl border border-[#D4AF37]/40 focus:outline-none focus:border-[#D4AF37] resize-none"></textarea>
+</div>
 
                     <div>
                         <label class="text-xs font-bold text-[#8892B0] block mb-1.5">Pilih Jasa Pengiriman</label>
@@ -1093,6 +1101,7 @@
         const sName = document.getElementById('shipping-name').value.trim();
         const sPhone = document.getElementById('shipping-phone').value.trim();
         const sAddress = document.getElementById('shipping-address').value.trim();
+        const sDescription = document.getElementById('order-description').value.trim();
 
         if(!sName || !sPhone || !sAddress) {
             showToast("Harap isi seluruh Informasi Pengiriman penerima!", "error");
@@ -1118,7 +1127,8 @@
             products: productsStr,
             total: grandTotal,
             method: `${methodPay} (${courierName})`,
-            address: sAddress
+            address: sAddress,
+            description: sDescription
         };
 
         document.getElementById('payment-modal-total').innerText = formatMoney(grandTotal);
@@ -1224,7 +1234,8 @@
             if(document.getElementById('shipping-name')) document.getElementById('shipping-name').value = "";
             if(document.getElementById('shipping-phone')) document.getElementById('shipping-phone').value = "";
             if(document.getElementById('shipping-address')) document.getElementById('shipping-address').value = "";
-
+            if(document.getElementById('order-description')) document.getElementById('order-description').value = "";
+            
             switchView('order-history');
         })
         .catch(err => {
