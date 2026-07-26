@@ -59,6 +59,13 @@
         .aspect-banner-3-1 {
             aspect-ratio: 3 / 1;
         }
+
+        /* Galeri foto produk (kartu & detail) */
+        .gallery-arrow { opacity: 0; transition: opacity 0.15s ease; }
+        .gallery-hover-zone:hover .gallery-arrow { opacity: 1; }
+        .gallery-dot { transition: all 0.2s ease; }
+        .thumb-strip::-webkit-scrollbar { height: 5px; }
+        .thumb-strip::-webkit-scrollbar-thumb { background: #D4AF37; border-radius: 4px; }
     </style>
 
 <link rel="icon" type="image/png" href="favicon.png">
@@ -113,6 +120,9 @@
                     </button>
 
                     <div id="user-profile-section" class="flex items-center gap-2 border-l border-[#D4AF37]/30 pl-2">
+                        <a href="seller.html" id="seller-panel-btn" class="inline-flex items-center gap-1.5 bg-[#0A192F] hover:bg-[#172A45] text-[#D4AF37] px-3 py-1.5 rounded-xl text-xs font-bold transition border border-[#D4AF37]/30" title="Jual Produk Anda Sendiri">
+                            <i class="fa-solid fa-shop"></i> <span class="hidden sm:inline">Jual Produk</span>
+                        </a>
                         <button onclick="openLoginModal()" id="login-nav-btn" class="bg-[#D4AF37] hover:bg-[#F3E5AB] text-[#0A192F] px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-md">Login</button>
                         <a href="admin.html" id="admin-panel-btn" class="hidden inline-flex items-center gap-1.5 bg-[#0A192F] hover:bg-[#172A45] text-[#D4AF37] px-3 py-1.5 rounded-xl text-xs font-bold transition border border-[#D4AF37]/30" title="Buka Dashboard Admin">
                             <i class="fa-solid fa-user-shield"></i> <span class="hidden sm:inline">Admin Panel</span>
@@ -348,6 +358,8 @@
     const WHATSAPP_ADMIN_COMPLAINT = "6285179713643"; 
 
     // DATA KATALOG PRODUK ASLI
+    // Catatan: setiap produk sekarang bisa punya field "images" (array url/foto).
+    // Jika hanya ada "img" tunggal, sistem akan otomatis memperlakukannya sebagai galeri 1 foto.
     let products = [
         { 
             id: 1, 
@@ -514,13 +526,79 @@
     let activeSlideIndex = 0;
     let selectedCategory = 'Semua';
 
+    // State galeri foto per kartu produk (grid) & galeri detail produk
+    let cardGalleryIndex = {};   // { [productId]: currentIndex }
+    let detailProduct = null;
+    let detailImgIndex = 0;
+
     window.addEventListener('DOMContentLoaded', () => {
         initAuth();
         renderCategories();
         renderProducts();
         updateCartCount();
         startBannerAutoplay();
+        loadApprovedSellerProducts();
     });
+
+    // Ambil array foto produk dari berbagai kemungkinan bentuk data (array asli, JSON string, atau 1 foto tunggal)
+    function getProductImages(p) {
+        if (Array.isArray(p.images) && p.images.length) return p.images;
+        if (typeof p.images === "string" && p.images.trim()) {
+            try {
+                const parsed = JSON.parse(p.images);
+                if (Array.isArray(parsed) && parsed.length) return parsed;
+            } catch (e) { /* bukan JSON, abaikan */ }
+        }
+        if (p.img) return [p.img];
+        return [];
+    }
+
+    // Ambil produk yang diajukan seller (seller.html) dan sudah disetujui admin,
+    // lalu gabungkan ke etalase. Butuh backend: doGet ?action=getApprovedProducts
+    function loadApprovedSellerProducts() {
+        fetch(SPREADSHEET_API_URL + "?action=getApprovedProducts")
+            .then(res => res.ok ? res.json() : Promise.reject())
+            .then(data => {
+                const items = Array.isArray(data) ? data : (data.products || []);
+                if (!items.length) return;
+
+                const sellerProducts = items.map((p, idx) => {
+                    let imgs = [];
+                    if (Array.isArray(p.images) && p.images.length) {
+                        imgs = p.images;
+                    } else if (typeof p.images === "string" && p.images.trim()) {
+                        try {
+                            const parsed = JSON.parse(p.images);
+                            if (Array.isArray(parsed)) imgs = parsed;
+                        } catch (e) { /* abaikan */ }
+                    } else if (typeof p.imageUrls === "string" && p.imageUrls.trim()) {
+                        try {
+                            const parsed = JSON.parse(p.imageUrls);
+                            if (Array.isArray(parsed)) imgs = parsed;
+                        } catch (e) { /* abaikan */ }
+                    } else if (p.imageUrl) {
+                        imgs = [p.imageUrl];
+                    }
+
+                    return {
+                        id: "seller-" + (p.id || p.productId || idx),
+                        name: p.name || p.Name || "Produk",
+                        category: p.category || p.Category || "Produk Lainnya",
+                        price: Number(p.price || p.Price || 0),
+                        stock: Number(p.stock || p.Stock || 0),
+                        images: imgs,
+                        img: imgs[0] || "",
+                        description: p.description || p.Description || "",
+                        seller: p.username || p.Username || null
+                    };
+                });
+
+                products = products.concat(sellerProducts);
+                renderCategories();
+                filterProducts();
+            })
+            .catch(err => console.error("Gagal memuat produk seller:", err));
+    }
 
     // SISTEM OTENTIKASI & RE-LOGIN OTOMATIS
     function initAuth() {
@@ -874,15 +952,33 @@
 
         grid.innerHTML = filtered.map(p => {
             const isLiked = likedProducts.includes(p.id);
+            const imgs = getProductImages(p);
+            const activeIdx = cardGalleryIndex[p.id] || 0;
+            const mainImg = imgs[activeIdx] || imgs[0] || '';
+            const hasMultiple = imgs.length > 1;
+
+            const arrowsHtml = hasMultiple ? `
+                <button onclick="changeCardImage(event, '${p.id}', -1)" class="gallery-arrow absolute left-1.5 top-1/2 -translate-y-1/2 z-10 w-6 h-6 rounded-full bg-[#0A192F]/70 text-[#D4AF37] flex items-center justify-center text-[10px] shadow-md"><i class="fa-solid fa-chevron-left"></i></button>
+                <button onclick="changeCardImage(event, '${p.id}', 1)" class="gallery-arrow absolute right-1.5 top-1/2 -translate-y-1/2 z-10 w-6 h-6 rounded-full bg-[#0A192F]/70 text-[#D4AF37] flex items-center justify-center text-[10px] shadow-md"><i class="fa-solid fa-chevron-right"></i></button>
+            ` : '';
+
+            const dotsHtml = hasMultiple ? `
+                <div class="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+                    ${imgs.map((_, i) => `<span class="w-1.5 h-1.5 rounded-full ${i === activeIdx ? 'bg-[#D4AF37]' : 'bg-white/40'}"></span>`).join('')}
+                </div>
+            ` : '';
+
             return `
             <div class="bg-[#172A45] border border-[#D4AF37]/30 rounded-3xl overflow-hidden hover:shadow-xl hover:border-[#D4AF37] transition flex flex-col justify-between h-full group view-fade-in">
                 <div>
-                    <div class="relative overflow-hidden aspect-square bg-[#0A192F] flex items-center justify-center p-2">
-                        <img src="${p.img}" alt="${p.name}" class="w-full h-full object-contain group-hover:scale-105 transition duration-500">
+                    <div class="relative overflow-hidden aspect-square bg-[#0A192F] flex items-center justify-center p-2 gallery-hover-zone">
+                        <img id="card-img-${p.id}" src="${mainImg}" alt="${p.name}" class="w-full h-full object-contain group-hover:scale-105 transition duration-500">
                         <span class="absolute top-3 left-3 bg-[#0A192F]/80 border border-[#D4AF37]/30 px-2.5 py-0.5 rounded-full text-[10px] text-[#D4AF37] font-bold tracking-wide backdrop-blur-sm">${p.category}</span>
-                        <button onclick="toggleLikeProduct(event, ${p.id})" class="absolute top-3 right-3 w-7 h-7 rounded-full bg-[#0A192F]/60 backdrop-blur-sm flex items-center justify-center border border-[#D4AF37]/30 text-xs shadow-md transition cursor-pointer ${isLiked ? 'text-rose-500' : 'text-[#8892B0] hover:text-rose-400'}">
+                        <button onclick="toggleLikeProduct(event, ${JSON.stringify(p.id)})" class="absolute top-3 right-3 w-7 h-7 rounded-full bg-[#0A192F]/60 backdrop-blur-sm flex items-center justify-center border border-[#D4AF37]/30 text-xs shadow-md transition cursor-pointer z-10 ${isLiked ? 'text-rose-500' : 'text-[#8892B0] hover:text-rose-400'}">
                             <i class="fa-solid fa-heart"></i>
                         </button>
+                        ${arrowsHtml}
+                        ${dotsHtml}
                     </div>
                     <div class="p-4 space-y-2">
                         <h3 class="text-sm font-bold text-[#E6F1FF] line-clamp-1">${p.name}</h3>
@@ -895,8 +991,8 @@
                         <span class="text-[10px] text-[#8892B0]">Stok: <span class="font-bold text-[#E6F1FF]">${p.stock}</span></span>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="openProductDetail(${p.id})" class="flex-1 bg-[#0A192F] hover:bg-[#0A192F]/80 text-[#E6F1FF] text-xs font-bold py-2 rounded-xl border border-[#D4AF37]/40 transition cursor-pointer">Detail</button>
-                        <button onclick="addToCart(${p.id})" class="flex-1 bg-[#D4AF37] hover:bg-[#F3E5AB] text-[#0A192F] text-xs font-black py-2 rounded-xl shadow transition cursor-pointer"><i class="fa-solid fa-cart-plus mr-1"></i>Beli</button>
+                        <button onclick="openProductDetail(${JSON.stringify(p.id)})" class="flex-1 bg-[#0A192F] hover:bg-[#0A192F]/80 text-[#E6F1FF] text-xs font-bold py-2 rounded-xl border border-[#D4AF37]/40 transition cursor-pointer">Detail</button>
+                        <button onclick="addToCart(${JSON.stringify(p.id)})" class="flex-1 bg-[#D4AF37] hover:bg-[#F3E5AB] text-[#0A192F] text-xs font-black py-2 rounded-xl shadow transition cursor-pointer"><i class="fa-solid fa-cart-plus mr-1"></i>Beli</button>
                     </div>
                 </div>
             </div>`;
@@ -904,6 +1000,20 @@
     }
 
     function renderProducts() { filterProducts(); }
+
+    // Ganti foto aktif pada kartu produk di grid (tanpa membuka halaman detail)
+    function changeCardImage(event, id, delta) {
+        event.stopPropagation();
+        const p = products.find(x => String(x.id) === String(id));
+        if (!p) return;
+        const imgs = getProductImages(p);
+        if (imgs.length <= 1) return;
+
+        let idx = cardGalleryIndex[id] || 0;
+        idx = (idx + delta + imgs.length) % imgs.length;
+        cardGalleryIndex[id] = idx;
+        filterProducts();
+    }
 
     function toggleLikeProduct(event, id) {
         event.stopPropagation();
@@ -930,20 +1040,26 @@
             return;
         }
 
-        grid.innerHTML = filtered.map(p => `
+        grid.innerHTML = filtered.map(p => {
+            const imgs = getProductImages(p);
+            return `
             <div class="bg-[#172A45] border border-[#D4AF37]/30 rounded-3xl overflow-hidden p-4 space-y-3 shadow-md view-fade-in flex flex-col justify-between">
-                <img src="${p.img}" class="w-full h-32 object-contain rounded-xl bg-[#0A192F] p-1 border border-[#D4AF37]/20">
+                <img src="${imgs[0] || ''}" class="w-full h-32 object-contain rounded-xl bg-[#0A192F] p-1 border border-[#D4AF37]/20">
                 <h4 class="text-xs font-bold text-[#E6F1FF] truncate">${p.name}</h4>
                 <div class="flex justify-between items-center"><span class="text-[#D4AF37] font-mono text-xs font-bold">${formatMoney(p.price)}</span><span class="text-[10px] text-[#8892B0]">Stok: ${p.stock}</span></div>
-                <button onclick="addToCart(${p.id})" class="w-full bg-[#D4AF37] hover:bg-[#F3E5AB] text-[#0A192F] text-[11px] font-bold py-1.5 rounded-lg mt-1"><i class="fa-solid fa-cart-plus mr-1"></i>Beli Instan</button>
+                <button onclick="addToCart(${JSON.stringify(p.id)})" class="w-full bg-[#D4AF37] hover:bg-[#F3E5AB] text-[#0A192F] text-[11px] font-bold py-1.5 rounded-lg mt-1"><i class="fa-solid fa-cart-plus mr-1"></i>Beli Instan</button>
             </div>
-        `).join('');
+        `;
+        }).join('');
     }
 
-    // MANAJEMEN DETAIL PRODUK
+    // MANAJEMEN DETAIL PRODUK (dengan galeri multi-foto)
     function openProductDetail(id) {
-        const p = products.find(x => x.id === id);
+        const p = products.find(x => String(x.id) === String(id));
         if(!p) return;
+
+        detailProduct = p;
+        detailImgIndex = 0;
 
         document.getElementById('view-home').classList.add('hidden');
         document.getElementById('view-cart').classList.add('hidden');
@@ -951,10 +1067,52 @@
         document.getElementById('view-detail').classList.remove('hidden');
         if(document.getElementById('promo-header')) document.getElementById('promo-header').classList.add('hidden');
 
+        renderDetailProduct();
+
+        const relatedGrid = document.getElementById('related-products-grid');
+        const related = products.filter(x => x.category === p.category && x.id !== p.id).slice(0, 4);
+        if(related.length === 0) {
+            document.getElementById('related-products-section').classList.add('hidden');
+        } else {
+            document.getElementById('related-products-section').classList.remove('hidden');
+            relatedGrid.innerHTML = related.map(r => {
+                const rImgs = getProductImages(r);
+                return `
+                <div onclick="openProductDetail(${JSON.stringify(r.id)})" class="bg-[#0A192F]/50 border border-[#D4AF37]/30 p-3 rounded-2xl cursor-pointer hover:border-[#D4AF37] transition flex flex-col justify-between">
+                    <img src="${rImgs[0] || ''}" class="w-full h-24 object-contain rounded-xl bg-[#172A45] p-1 border border-[#D4AF37]/20">
+                    <h4 class="text-xs font-bold text-[#E6F1FF] mt-2 truncate">${r.name}</h4>
+                    <div class="text-[#D4AF37] font-mono font-bold text-xs mt-1">${formatMoney(r.price)}</div>
+                </div>
+            `;
+            }).join('');
+        }
+    }
+
+    function renderDetailProduct() {
+        const p = detailProduct;
+        if (!p) return;
+        const imgs = getProductImages(p);
+        const hasMultiple = imgs.length > 1;
+        const mainImg = imgs[detailImgIndex] || imgs[0] || '';
+
         const wrapper = document.getElementById('detail-product-wrapper');
         wrapper.innerHTML = `
-            <div class="rounded-2xl overflow-hidden bg-[#0A192F] border border-[#D4AF37]/30 aspect-square flex items-center justify-center p-4">
-                <img src="${p.img}" class="max-w-full max-h-[400px] object-contain">
+            <div class="space-y-3">
+                <div class="relative rounded-2xl overflow-hidden bg-[#0A192F] border border-[#D4AF37]/30 aspect-square flex items-center justify-center p-4 gallery-hover-zone">
+                    <img id="detail-main-img" src="${mainImg}" class="max-w-full max-h-full object-contain">
+                    ${hasMultiple ? `
+                        <button onclick="changeDetailImage(-1)" class="gallery-arrow absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-[#0A192F]/70 text-[#D4AF37] flex items-center justify-center shadow-md"><i class="fa-solid fa-chevron-left"></i></button>
+                        <button onclick="changeDetailImage(1)" class="gallery-arrow absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-[#0A192F]/70 text-[#D4AF37] flex items-center justify-center shadow-md"><i class="fa-solid fa-chevron-right"></i></button>
+                        <span class="absolute bottom-2 right-3 bg-[#0A192F]/70 text-[#D4AF37] text-[10px] font-bold px-2 py-0.5 rounded-full" id="detail-img-counter">${detailImgIndex + 1}/${imgs.length}</span>
+                    ` : ''}
+                </div>
+                ${hasMultiple ? `
+                    <div class="flex gap-2 overflow-x-auto thumb-strip pb-1" id="detail-thumb-strip">
+                        ${imgs.map((im, i) => `
+                            <img src="${im}" onclick="setDetailImage(${i})" class="w-16 h-16 object-cover rounded-lg border-2 ${i === detailImgIndex ? 'border-[#D4AF37]' : 'border-transparent opacity-70 hover:opacity-100'} cursor-pointer shrink-0 transition">
+                        `).join('')}
+                    </div>
+                ` : ''}
             </div>
             <div class="flex flex-col justify-between space-y-4">
                 <div class="space-y-2">
@@ -965,33 +1123,31 @@
                 </div>
                 <div class="pt-4 border-t border-[#D4AF37]/20 space-y-2">
                     <div class="text-xs text-[#8892B0]">Ketersediaan Barang Gudang: <span class="font-bold text-[#E6F1FF] font-mono">${p.stock} unit</span></div>
-                    <button onclick="addToCart(${p.id})" class="w-full bg-[#D4AF37] hover:bg-[#F3E5AB] text-[#0A192F] text-xs font-black py-3 px-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer">
+                    <button onclick="addToCart(${JSON.stringify(p.id)})" class="w-full bg-[#D4AF37] hover:bg-[#F3E5AB] text-[#0A192F] text-xs font-black py-3 px-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer">
                         <i class="fa-solid fa-cart-plus"></i> Masukkan ke Keranjang Belanja
                     </button>
                 </div>
             </div>
         `;
+    }
 
-        const relatedGrid = document.getElementById('related-products-grid');
-        const related = products.filter(x => x.category === p.category && x.id !== p.id).slice(0, 4);
-        if(related.length === 0) {
-            document.getElementById('related-products-section').classList.add('hidden');
-        } else {
-            document.getElementById('related-products-section').classList.remove('hidden');
-            relatedGrid.innerHTML = related.map(r => `
-                <div onclick="openProductDetail(${r.id})" class="bg-[#0A192F]/50 border border-[#D4AF37]/30 p-3 rounded-2xl cursor-pointer hover:border-[#D4AF37] transition flex flex-col justify-between">
-                    <img src="${r.img}" class="w-full h-24 object-contain rounded-xl bg-[#172A45] p-1 border border-[#D4AF37]/20">
-                    <h4 class="text-xs font-bold text-[#E6F1FF] mt-2 truncate">${r.name}</h4>
-                    <div class="text-[#D4AF37] font-mono font-bold text-xs mt-1">${formatMoney(r.price)}</div>
-                </div>
-            `).join('');
-        }
+    function changeDetailImage(delta) {
+        if (!detailProduct) return;
+        const imgs = getProductImages(detailProduct);
+        if (imgs.length <= 1) return;
+        detailImgIndex = (detailImgIndex + delta + imgs.length) % imgs.length;
+        renderDetailProduct();
+    }
+
+    function setDetailImage(idx) {
+        detailImgIndex = idx;
+        renderDetailProduct();
     }
 
     // KERANJANG BELANJA LOGIC
     function addToCart(id) {
         if (!requireLogin("menambahkan barang ke keranjang")) return;
-        const p = products.find(x => x.id === id);
+        const p = products.find(x => String(x.id) === String(id));
         if (!p) return;
 
         if (p.stock <= 0) {
@@ -999,7 +1155,7 @@
             return;
         }
 
-        const exist = cart.find(item => item.id === id);
+        const exist = cart.find(item => String(item.id) === String(id));
         if (exist) {
             if (exist.qty >= p.stock) {
                 showToast(`Batas maksimal stok tercapai (${p.stock} pcs).`, "error");
@@ -1007,7 +1163,8 @@
             }
             exist.qty++;
         } else {
-            cart.push({ id: p.id, name: p.name, price: p.price, img: p.img, qty: 1 });
+            const imgs = getProductImages(p);
+            cart.push({ id: p.id, name: p.name, price: p.price, img: imgs[0] || p.img || '', qty: 1 });
         }
 
         showToast(`Berhasil menambah ${p.name} ke keranjang!`);
@@ -1035,7 +1192,7 @@
         }
 
         list.innerHTML = cart.map(item => {
-            const original = products.find(x => x.id === item.id) || { stock: 99 };
+            const original = products.find(x => String(x.id) === String(item.id)) || { stock: 99 };
             return `
                 <div class="flex items-center gap-4 bg-[#172A45] border border-[#D4AF37]/30 p-4 rounded-3xl">
                     <img src="${item.img}" class="w-16 h-16 object-contain p-1 rounded-xl border border-[#D4AF37]/30 bg-[#0A192F] flex-shrink-0">
@@ -1043,12 +1200,12 @@
                         <h4 class="text-xs md:text-sm font-bold text-[#E6F1FF] truncate">${item.name}</h4>
                         <div class="text-[#D4AF37] font-mono font-bold text-xs mt-0.5">${formatMoney(item.price)}</div>
                         <div class="flex items-center gap-2 mt-2">
-                            <button onclick="changeQty(${item.id}, -1)" class="w-6 h-6 rounded-md bg-[#0A192F] hover:bg-[#0A192F]/80 text-[#D4AF37] text-xs font-bold transition flex items-center justify-center cursor-pointer border border-[#D4AF37]/30">-</button>
+                            <button onclick="changeQty(${JSON.stringify(item.id)}, -1)" class="w-6 h-6 rounded-md bg-[#0A192F] hover:bg-[#0A192F]/80 text-[#D4AF37] text-xs font-bold transition flex items-center justify-center cursor-pointer border border-[#D4AF37]/30">-</button>
                             <span class="text-xs font-mono font-bold text-[#E6F1FF] min-w-[20px] text-center">${item.qty}</span>
-                            <button onclick="changeQty(${item.id}, 1)" class="w-6 h-6 rounded-md bg-[#0A192F] hover:bg-[#0A192F]/80 text-[#D4AF37] text-xs font-bold transition flex items-center justify-center cursor-pointer border border-[#D4AF37]/30">+</button>
+                            <button onclick="changeQty(${JSON.stringify(item.id)}, 1)" class="w-6 h-6 rounded-md bg-[#0A192F] hover:bg-[#0A192F]/80 text-[#D4AF37] text-xs font-bold transition flex items-center justify-center cursor-pointer border border-[#D4AF37]/30">+</button>
                         </div>
                     </div>
-                    <button onclick="removeFromCart(${item.id})" class="text-[#8892B0] hover:text-red-400 p-2 transition cursor-pointer text-sm">
+                    <button onclick="removeFromCart(${JSON.stringify(item.id)})" class="text-[#8892B0] hover:text-red-400 p-2 transition cursor-pointer text-sm">
                         <i class="fa-solid fa-trash-can"></i>
                     </button>
                 </div>
@@ -1058,25 +1215,25 @@
     }
 
     function changeQty(id, delta) {
-        const item = cart.find(x => x.id === id);
+        const item = cart.find(x => String(x.id) === String(id));
         if (!item) return;
 
-        const original = products.find(x => x.id === id);
-        if(delta > 0 && item.qty >= original.stock) {
+        const original = products.find(x => String(x.id) === String(id));
+        if(delta > 0 && original && item.qty >= original.stock) {
             showToast(`Maaf, batas maksimum stok barang adalah ${original.stock} pcs.`, "error");
             return;
         }
 
         item.qty += delta;
         if (item.qty <= 0) {
-            cart = cart.filter(x => x.id !== id);
+            cart = cart.filter(x => String(x.id) !== String(id));
         }
         updateCartCount();
         renderCartItems();
     }
 
     function removeFromCart(id) {
-        cart = cart.filter(x => x.id !== id);
+        cart = cart.filter(x => String(x.id) !== String(id));
         updateCartCount();
         renderCartItems();
         showToast("Barang dihapus dari keranjang.");
