@@ -81,6 +81,19 @@
 
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 space-y-6">
 
+            <!-- TAB SWITCH -->
+            <div class="flex gap-2">
+                <button data-tab="orders" onclick="setAdminTab('orders')" class="admin-tab-btn flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-bold border transition bg-gradient-to-r from-amber-500 to-yellow-500 text-[#0b1329] border-amber-500">
+                    <i class="fa-solid fa-receipt mr-1.5"></i>Pesanan
+                </button>
+                <button data-tab="products" onclick="setAdminTab('products')" class="admin-tab-btn flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-bold border transition bg-[#1a284f] text-gray-300 border-amber-500/20">
+                    <i class="fa-solid fa-boxes-stacked mr-1.5"></i>Produk Seller <span id="seller-pending-badge" class="hidden ml-1 bg-red-500 text-white rounded-full px-1.5 text-[9px]">0</span>
+                </button>
+            </div>
+
+            <!-- TAB: PESANAN -->
+            <div id="tab-orders" class="space-y-6">
+
             <!-- STATS -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 <div class="bg-[#111c3a] border border-amber-500/10 rounded-2xl p-4 shadow-sm">
@@ -139,19 +152,82 @@
             <!-- ORDERS CARDS (mobile/tablet) -->
             <div class="lg:hidden space-y-3" id="orders-cards"></div>
 
+            </div>
+            <!-- /TAB: PESANAN -->
+
+            <!-- TAB: PRODUK SELLER -->
+            <div id="tab-products" class="hidden space-y-6">
+
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                    <div class="bg-[#111c3a] border border-amber-500/10 rounded-2xl p-4 shadow-sm">
+                        <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Total Pengajuan</div>
+                        <div id="sp-stat-total" class="text-2xl font-black text-gray-100 mt-1 font-mono">0</div>
+                    </div>
+                    <div class="bg-[#111c3a] border border-amber-500/10 rounded-2xl p-4 shadow-sm">
+                        <div class="text-[10px] text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1"><i class="fa-solid fa-clock"></i> Menunggu Review</div>
+                        <div id="sp-stat-pending" class="text-2xl font-black text-amber-400 mt-1 font-mono">0</div>
+                    </div>
+                    <div class="bg-[#111c3a] border border-amber-500/10 rounded-2xl p-4 shadow-sm">
+                        <div class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Disetujui</div>
+                        <div id="sp-stat-approved" class="text-2xl font-black text-emerald-400 mt-1 font-mono">0</div>
+                    </div>
+                    <div class="bg-[#111c3a] border border-amber-500/10 rounded-2xl p-4 shadow-sm">
+                        <div class="text-[10px] text-red-400 font-bold uppercase tracking-wider flex items-center gap-1"><i class="fa-solid fa-circle-xmark"></i> Ditolak</div>
+                        <div id="sp-stat-rejected" class="text-2xl font-black text-red-400 mt-1 font-mono">0</div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3 items-center justify-between bg-[#111c3a] p-4 rounded-2xl border border-amber-500/10">
+                    <div class="relative w-full sm:max-w-xs">
+                        <input type="text" id="sp-search-input" oninput="renderSellerProducts()" placeholder="Cari nama produk / seller..." class="w-full bg-[#0b1329] text-gray-200 pl-9 pr-3 py-2 rounded-xl border border-amber-500/20 focus:outline-none focus:border-amber-500 text-xs">
+                        <div class="absolute left-3 top-2.5 text-gray-400 text-xs"><i class="fa-solid fa-magnifying-glass"></i></div>
+                    </div>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button data-spfilter="Semua" onclick="setProductStatusFilter('Semua')" class="sp-filter-badge flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold border transition bg-gradient-to-r from-amber-500 to-yellow-500 text-[#0b1329] border-amber-500">Semua</button>
+                        <button data-spfilter="Pending" onclick="setProductStatusFilter('Pending')" class="sp-filter-badge flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold border transition bg-[#1a284f] text-gray-300 border-amber-500/20">Pending</button>
+                        <button data-spfilter="Approved" onclick="setProductStatusFilter('Approved')" class="sp-filter-badge flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold border transition bg-[#1a284f] text-gray-300 border-amber-500/20">Disetujui</button>
+                    </div>
+                </div>
+
+                <div id="seller-products-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+            </div>
+            <!-- /TAB: PRODUK SELLER -->
+
         </main>
     </div>
 
 <script>
     const SPREADSHEET_API_URL = "https://script.google.com/macros/s/AKfycbwicWEk1yyZNs8xre8V0fZadGXX5VP-eZ42JkrLuErprckEsCQzyjemH3m6lpRj3d93/exec";
 
+    // HARUS SAMA PERSIS dengan ADMIN_SECRET di Code.gs, agar aksi hapus/ubah status diizinkan backend.
+    const ADMIN_ACTION_KEY = "GANTI_DENGAN_KODE_RAHASIA_ANDA_SENDIRI";
+
     let allOrders = [];
     let statusFilter = 'Semua';
     let autoRefreshTimer = null;
 
+    let allSellerProducts = [];
+    let productStatusFilter = 'Semua';
+    let activeAdminTab = 'orders';
+
     window.addEventListener('DOMContentLoaded', () => {
         checkAdminAuth();
     });
+
+    // TAB SWITCH
+    function setAdminTab(tab) {
+        activeAdminTab = tab;
+        document.getElementById('tab-orders').classList.toggle('hidden', tab !== 'orders');
+        document.getElementById('tab-products').classList.toggle('hidden', tab !== 'products');
+        document.querySelectorAll('.admin-tab-btn').forEach(b => {
+            if (b.dataset.tab === tab) {
+                b.className = "admin-tab-btn flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-bold border transition bg-gradient-to-r from-amber-500 to-yellow-500 text-[#0b1329] border-amber-500";
+            } else {
+                b.className = "admin-tab-btn flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-bold border transition bg-[#1a284f] text-gray-300 border-amber-500/20";
+            }
+        });
+        if (tab === 'products') fetchSellerProducts();
+    }
 
     // AUTH
     function checkAdminAuth() {
@@ -193,6 +269,7 @@
         document.getElementById('login-gate').classList.add('hidden');
         document.getElementById('dashboard').classList.remove('hidden');
         fetchOrders();
+        fetchSellerProducts();
         if (autoRefreshTimer) clearInterval(autoRefreshTimer);
         autoRefreshTimer = setInterval(() => fetchOrders(), 30000); // monitoring otomatis tiap 30 detik
     }
@@ -404,7 +481,7 @@
             method: "POST",
             mode: "no-cors",
             headers: { "Content-Type": "text/plain" },
-            body: JSON.stringify({ action: "updateStatus", invoice: invoice, status: newStatus })
+            body: JSON.stringify({ action: "updateStatus", invoice: invoice, status: newStatus, adminKey: ADMIN_ACTION_KEY })
         })
         .then(() => {
             showToast(`Status ${invoice} diperbarui menjadi ${newStatus}.`, "success");
@@ -440,7 +517,7 @@
             method: "POST",
             mode: "no-cors",
             headers: { "Content-Type": "text/plain" },
-            body: JSON.stringify({ action: "clearOrders" })
+            body: JSON.stringify({ action: "clearOrders", adminKey: ADMIN_ACTION_KEY })
         })
         .then(() => {
             showToast("Seluruh data pesanan berhasil dihapus.", "success");
@@ -458,6 +535,157 @@
                 btn.disabled = false;
                 btn.innerHTML = `<i class="fa-solid fa-trash-can"></i> <span class="hidden sm:inline">Hapus Semua</span>`;
             }
+        });
+    }
+
+    // ======================================================================
+    // PRODUK SELLER (pengajuan dari seller.html)
+    // Butuh backend: doGet ?action=getAllSellerProducts
+    //                doPost action "updateProductStatus" { productId, status }
+    // ======================================================================
+    function fetchSellerProducts() {
+        const container = document.getElementById('seller-products-list');
+        if (container) {
+            container.innerHTML = `<div class="col-span-full text-center py-10 text-gray-500 text-xs"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Memuat produk seller...</div>`;
+        }
+
+        fetch(SPREADSHEET_API_URL + "?action=getAllSellerProducts&adminKey=" + encodeURIComponent(ADMIN_ACTION_KEY))
+            .then(res => {
+                if (!res.ok) throw new Error("Gagal mengambil data produk seller");
+                return res.json();
+            })
+            .then(data => {
+                allSellerProducts = Array.isArray(data) ? data.slice().reverse() : (data.products || []).slice().reverse();
+                renderSellerProducts();
+                updateSellerProductStats();
+            })
+            .catch(err => {
+                console.error(err);
+                if (container) {
+                    container.innerHTML = `<div class="col-span-full text-center py-10 text-red-400 text-xs"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Gagal memuat produk seller. Pastikan backend mendukung aksi "getAllSellerProducts".</div>`;
+                }
+            });
+    }
+
+    function updateSellerProductStats() {
+        const total = allSellerProducts.length;
+        const pending = allSellerProducts.filter(p => isProductPending(p.status)).length;
+        const approved = allSellerProducts.filter(p => isProductApproved(p.status)).length;
+        const rejected = allSellerProducts.filter(p => isProductRejected(p.status)).length;
+        document.getElementById('sp-stat-total').innerText = total;
+        document.getElementById('sp-stat-pending').innerText = pending;
+        document.getElementById('sp-stat-approved').innerText = approved;
+        document.getElementById('sp-stat-rejected').innerText = rejected;
+
+        const badge = document.getElementById('seller-pending-badge');
+        if (badge) {
+            if (pending > 0) { badge.innerText = pending; badge.classList.remove('hidden'); }
+            else { badge.classList.add('hidden'); }
+        }
+    }
+
+    function isProductPending(s) { return !s || s.toLowerCase() === 'pending'; }
+    function isProductApproved(s) { return (s || '').toLowerCase() === 'approved' || (s || '').toLowerCase() === 'disetujui'; }
+    function isProductRejected(s) { return (s || '').toLowerCase() === 'rejected' || (s || '').toLowerCase() === 'ditolak'; }
+
+    function setProductStatusFilter(f) {
+        productStatusFilter = f;
+        document.querySelectorAll('.sp-filter-badge').forEach(b => {
+            if (b.dataset.spfilter === f) {
+                b.className = "sp-filter-badge flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold border transition bg-gradient-to-r from-amber-500 to-yellow-500 text-[#0b1329] border-amber-500";
+            } else {
+                b.className = "sp-filter-badge flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold border transition bg-[#1a284f] text-gray-300 border-amber-500/20";
+            }
+        });
+        renderSellerProducts();
+    }
+
+    function getFilteredSellerProducts() {
+        const q = (document.getElementById('sp-search-input').value || '').trim().toLowerCase();
+        return allSellerProducts.filter(p => {
+            const matchesStatus = productStatusFilter === 'Semua' ? true
+                : productStatusFilter === 'Pending' ? isProductPending(p.status)
+                : isProductApproved(p.status);
+            if (!matchesStatus) return false;
+            if (!q) return true;
+            const haystack = `${p.name || ''} ${p.username || ''}`.toLowerCase();
+            return haystack.includes(q);
+        });
+    }
+
+    function sellerProductStatusBadge(status) {
+        if (isProductApproved(status)) return `<span class="px-2.5 py-1 rounded-lg text-[10px] font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"><i class="fa-solid fa-circle-check mr-1"></i>Disetujui</span>`;
+        if (isProductRejected(status)) return `<span class="px-2.5 py-1 rounded-lg text-[10px] font-black bg-red-500/10 text-red-400 border border-red-500/20"><i class="fa-solid fa-circle-xmark mr-1"></i>Ditolak</span>`;
+        return `<span class="px-2.5 py-1 rounded-lg text-[10px] font-black bg-amber-500/10 text-amber-400 border border-amber-500/20"><i class="fa-solid fa-clock mr-1"></i>Pending</span>`;
+    }
+
+    function renderSellerProducts() {
+        const container = document.getElementById('seller-products-list');
+        const list = getFilteredSellerProducts();
+
+        if (list.length === 0) {
+            container.innerHTML = `<div class="col-span-full text-center py-12 text-gray-500 text-xs"><i class="fa-solid fa-inbox text-3xl mb-2 block text-gray-600"></i>Tidak ada produk seller yang cocok.</div>`;
+            return;
+        }
+
+        container.innerHTML = list.map(p => {
+            const id = escapeAttr(p.productId || p.id || '');
+            const img = p.imageUrl || p.ImageUrl || p.imageBase64 || '';
+            const price = Number(p.price || 0);
+            return `
+                <div class="row-in bg-[#111c3a] border border-amber-500/10 rounded-2xl p-4 space-y-3 shadow-sm">
+                    <div class="flex gap-3">
+                        <div class="w-16 h-16 rounded-xl bg-[#0b1329] shrink-0 overflow-hidden border border-amber-500/10">
+                            ${img ? `<img src="${img}" class="w-full h-full object-cover">` : `<div class="w-full h-full flex items-center justify-center text-gray-600"><i class="fa-solid fa-image"></i></div>`}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-start justify-between gap-2">
+                                <p class="text-xs font-black text-gray-100 truncate">${p.name || '-'}</p>
+                                ${sellerProductStatusBadge(p.status)}
+                            </div>
+                            <p class="text-[10px] text-gray-500 mt-0.5"><i class="fa-solid fa-user mr-1"></i>${p.username || '-'} &middot; ${p.category || '-'}</p>
+                            <p class="text-xs font-black text-amber-400 mt-1">${formatMoney(price)} <span class="text-[10px] text-gray-500 font-normal">&middot; stok ${p.stock || 0}</span></p>
+                        </div>
+                    </div>
+                    ${p.description ? `<p class="text-[11px] text-gray-400 line-clamp-2">${p.description}</p>` : ''}
+                    ${isProductPending(p.status) ? `
+                        <div class="flex gap-2 pt-1">
+                            <button onclick="reviewSellerProduct('${id}','Approved')" class="flex-1 text-[11px] font-bold text-emerald-400 hover:bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1.5 rounded-lg transition"><i class="fa-solid fa-check mr-1"></i>Setujui</button>
+                            <button onclick="reviewSellerProduct('${id}','Rejected')" class="flex-1 text-[11px] font-bold text-red-400 hover:bg-red-500/10 border border-red-500/30 px-2.5 py-1.5 rounded-lg transition"><i class="fa-solid fa-xmark mr-1"></i>Tolak</button>
+                        </div>
+                    ` : `
+                        <div class="flex gap-2 pt-1">
+                            <button onclick="reviewSellerProduct('${id}','Pending')" class="flex-1 text-[11px] font-bold text-gray-300 hover:bg-[#1a284f] border border-amber-500/20 px-2.5 py-1.5 rounded-lg transition"><i class="fa-solid fa-rotate-left mr-1"></i>Batalkan Keputusan</button>
+                        </div>
+                    `}
+                </div>
+            `;
+        }).join('');
+    }
+
+    function reviewSellerProduct(productId, newStatus) {
+        const label = newStatus === 'Approved' ? 'MENYETUJUI' : newStatus === 'Rejected' ? 'MENOLAK' : 'mengembalikan ke Pending';
+        if (!confirm(`Anda yakin ingin ${label} produk ini?`)) return;
+
+        const target = allSellerProducts.find(p => (p.productId || p.id || '') === productId);
+        if (target) target.status = newStatus;
+        renderSellerProducts();
+        updateSellerProductStats();
+
+        fetch(SPREADSHEET_API_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({ action: "updateProductStatus", productId: productId, status: newStatus, adminKey: KoperasiSaciba123 })
+        })
+        .then(() => {
+            showToast(`Status produk diperbarui menjadi ${newStatus}.`, "success");
+            setTimeout(fetchSellerProducts, 1500);
+        })
+        .catch(err => {
+            console.error(err);
+            showToast("Gagal mengirim perubahan status produk ke server.", "error");
+            fetchSellerProducts();
         });
     }
 
